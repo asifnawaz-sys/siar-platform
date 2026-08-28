@@ -1,0 +1,787 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Universal Product Editor</title>
+<style>
+:root{--bg:#0d1117;--panel:#161b22;--soft:#21262d;--text:#e6edf3;--muted:#8b949e;--line:#30363d;--accent:#3fb950;--field-edit-bg:#1a2430;--field-edit-border:#3d5568;--field-read-bg:#11161d;--field-read-border:#4a5563;--field-read-text:#8b9aab;--label-edit:#7ee787;--label-read:#7d8590;--danger:#f85149;--warn:#d29922;--shadow:0 16px 42px rgba(0,0,0,.45);--radius:8px;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+*{box-sizing:border-box}
+body{margin:0;height:100vh;overflow:hidden;background:var(--bg);color:var(--text)}
+button,input,select,textarea{font:inherit}
+a{color:var(--accent);font-weight:800}
+.app{height:100vh;display:grid;grid-template-rows:auto auto 1fr;gap:12px;width:calc(100% - 32px);max-width:1840px;margin:0 auto;padding:16px 0}
+.topbar,.toolbar,.panel{border:1px solid var(--line);border-radius:var(--radius);background:var(--panel);box-shadow:var(--shadow)}
+.topbar{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:16px}
+h1,h2,h3,p{margin-top:0}
+h1{margin-bottom:4px;font-size:1.28rem}
+.topbar p,.muted{color:var(--muted);margin-bottom:0}
+.summary{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px}
+.pill{border:1px solid var(--line);border-radius:999px;background:var(--soft);color:var(--muted);padding:7px 10px;font-size:.84rem;font-weight:800;white-space:nowrap}
+.pill.dirty{color:var(--warn);border-color:#9a6700;background:rgba(210,153,34,.12)}
+.pill.saved{color:var(--accent);border-color:#238636;background:rgba(63,185,80,.12)}
+.toolbar{display:grid;grid-template-columns:minmax(220px,1fr) 160px 140px auto auto auto auto auto;gap:10px;padding:12px;align-items:center}
+.select,.search,.field,textarea{width:100%;border:1px solid var(--field-edit-border);border-radius:var(--radius);background:var(--field-edit-bg);color:var(--text);padding:9px 10px;outline:none}
+.toolbar .select,.toolbar .search{background:var(--soft);border-color:var(--line)}
+.select,.search,.button{min-height:40px}
+.field:focus,textarea:focus,.select:focus,.search:focus{border-color:rgba(63,185,80,.65);box-shadow:0 0 0 3px rgba(63,185,80,.18)}
+.button{min-height:40px;border:0;border-radius:var(--radius);background:var(--accent);color:#0d1117;cursor:pointer;font-weight:800;padding:9px 13px;white-space:nowrap}
+.button.secondary{border:1px solid var(--line);background:var(--soft);color:var(--accent)}
+.button.warn{background:var(--warn);color:#0d1117}
+.button.danger{background:var(--danger);color:#fff}
+.button:disabled{opacity:.48;cursor:not-allowed}
+.detail-panel{min-height:0;overflow:auto;padding:14px}
+.detail-grid{display:grid;grid-template-columns:minmax(300px,420px) minmax(0,1fr);gap:14px;margin-bottom:14px}
+.image-frame{position:relative;display:grid;width:100%;aspect-ratio:850/1280;max-height:calc(100vh - 205px);min-height:520px;place-items:center;background:#1c2128;border-bottom:1px solid var(--line);overflow:hidden}
+.image-frame img{display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#1c2128}
+.image-empty{display:grid;width:calc(100% - 44px);min-height:230px;place-items:center;border:1px dashed var(--line);border-radius:var(--radius);color:var(--muted);text-align:center;padding:24px;background:rgba(255,255,255,.03)}
+.details{padding:18px}
+.kicker{color:var(--accent);font-size:.76rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px}
+.product-title{margin-bottom:14px;font-size:clamp(2rem,4vw,3.4rem);line-height:.96}
+.edit-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.edit-field{display:grid;gap:5px}
+.edit-field.wide{grid-column:span 2}
+.edit-field.full{grid-column:1/-1}
+.edit-field label{font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:900}
+.status-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.status-toggle{min-height:36px;border:1px solid var(--line);border-radius:999px;background:var(--soft);padding:7px 12px;cursor:pointer;font-weight:900;color:var(--muted)}
+.status-toggle.active{background:rgba(63,185,80,.14);border-color:#238636;color:var(--accent)}
+.status-toggle.active[data-status="draft"]{background:rgba(210,153,34,.14);border-color:#9a6700;color:var(--warn)}
+.field.readonly,input.field[readonly],textarea.readonly,textarea[readonly],.variant-input.readonly,input.variant-input[readonly]{background:var(--field-read-bg)!important;border:1px dashed var(--field-read-border)!important;color:var(--field-read-text)!important;cursor:default;box-shadow:none!important}
+.field.readonly{min-height:40px;display:flex;align-items:center}
+textarea{min-height:90px;resize:vertical;line-height:1.5}
+.description{max-height:300px;overflow:auto;white-space:pre-wrap;line-height:1.62;background:var(--field-edit-bg);border:1px solid var(--field-edit-border);border-radius:var(--radius);padding:14px}
+.description-edit{min-height:140px;outline:none;cursor:text}
+.description-edit:empty:before{content:attr(data-placeholder);color:var(--muted);pointer-events:none}
+.product-title{background:var(--field-edit-bg)!important;border:1px solid var(--field-edit-border)!important}
+.field-legend{display:flex;gap:18px;font-size:.72rem;color:var(--muted);margin:0 0 12px}
+.legend-editable,.legend-readonly{display:inline-flex;align-items:center;gap:6px}
+.legend-editable::before{content:'';width:12px;height:12px;border-radius:3px;background:var(--field-edit-bg);border:1px solid var(--field-edit-border)}
+.legend-readonly::before{content:'';width:12px;height:12px;border-radius:3px;background:var(--field-read-bg);border:1px dashed var(--field-read-border)}
+.edit-field:has(.field:not(.readonly)):not(:has(.description-edit))>label,.edit-field:has(textarea:not([readonly]))>label,.edit-field:has(.description-edit)>label{color:var(--label-edit)}
+.edit-field:has(.readonly)>label,.edit-field:has(input[readonly])>label{color:var(--label-read)}
+.description-edit:focus{border-color:rgba(63,185,80,.65);box-shadow:0 0 0 3px rgba(63,185,80,.18)}
+.rte-toolbar{display:flex;gap:4px;padding:6px;background:var(--field-edit-bg);border:1px solid var(--field-edit-border);border-bottom:0;border-radius:var(--radius) var(--radius) 0 0}
+.rte-toolbar+.description-edit{border-top-left-radius:0;border-top-right-radius:0}
+.rte-btn{min-width:30px;height:30px;border:1px solid var(--field-edit-border);border-radius:6px;background:var(--soft);color:var(--text);cursor:pointer;font-size:.92rem;line-height:1;padding:0 8px;display:inline-flex;align-items:center;justify-content:center}
+.rte-btn:hover{border-color:var(--accent)}
+.rte-btn.active{background:rgba(63,185,80,.16);border-color:#238636;color:var(--accent)}
+.card-head{padding:12px 14px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.card-head h3{margin:0;font-size:1rem}
+.content{padding:14px}
+.width-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.mini-button{min-height:36px;border:1px solid var(--line);border-radius:8px;min-width:38px;background:var(--soft);padding:7px 12px;cursor:pointer;font-weight:900;color:var(--muted)}
+.variant-row-btn{border:1px solid var(--line);border-radius:6px;background:var(--panel);cursor:pointer;font-weight:900;color:var(--muted);width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;font-size:.85rem;line-height:1;padding:0;vertical-align:middle}
+.variant-row-btn:hover{background:var(--line)}
+.variant-row-btn.remove{color:var(--danger)}
+.variant-table{--variant-table-width:100%;max-height:420px;overflow-y:auto;overflow-x:auto;border:1px solid var(--line);border-radius:6px;background:var(--panel)}
+.variant-table table{border:0;border-collapse:collapse;width:100%;min-width:var(--variant-table-width);table-layout:fixed;font-size:.82rem}
+.variant-table th{position:sticky;top:0;background:#1c2128;color:var(--muted);font-size:.7rem;text-transform:uppercase;z-index:1}
+.variant-table th,.variant-table td{padding:6px;border-bottom:1px solid var(--line);white-space:normal;text-align:left;vertical-align:top}
+.variant-input{width:100%;min-width:0;border:1px solid var(--field-edit-border);border-radius:6px;background:var(--field-edit-bg);color:var(--text);padding:6px 6px;overflow-wrap:anywhere}
+.cell-wrap{position:relative;display:block}
+.fill-handle{position:absolute;right:-4px;bottom:-4px;width:9px;height:9px;background:var(--accent);border:1px solid #0d1117;border-radius:1px;cursor:crosshair;opacity:0;z-index:2}
+.variant-input:focus+.fill-handle,.cell-wrap:hover .fill-handle{opacity:1}
+.cell-wrap.fill-target{outline:2px solid var(--accent);outline-offset:-1px;border-radius:3px}
+.empty-state{display:grid;place-items:center;min-height:380px;text-align:center;color:var(--muted);padding:40px}
+.empty-state.dropzone{border:2px dashed var(--line);border-radius:var(--radius);margin:2px}
+.modal-backdrop{position:fixed;inset:0;display:none;place-items:center;background:rgba(0,0,0,.62);z-index:20;padding:18px}
+.modal-backdrop.show{display:grid}
+.modal{width:min(520px,100%);background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:0 24px 70px rgba(0,0,0,.55);padding:18px}
+.modal h2{margin-bottom:8px}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:18px}
+@media(max-width:1200px){body{overflow:auto}.app{height:auto}.detail-grid{grid-template-columns:1fr}.edit-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.image-frame{max-height:none}}
+@media(max-width:980px){.toolbar{grid-template-columns:1fr 1fr}.toolbar .search{grid-column:1/-1}}
+@media(max-width:680px){.app{width:calc(100% - 20px)}.topbar{flex-direction:column}.toolbar,.edit-grid{grid-template-columns:1fr}.summary,.button{width:100%}.image-frame{min-height:360px}.edit-field.wide{grid-column:auto}}
+</style>
+</head>
+<body>
+<main class="app">
+<header class="topbar">
+  <div>
+    <h1>Universal Product Editor</h1>
+    <p>Edit product details and variants. Every variant row (Item, Fabric, Size, Price, Volumetric Weight) is edited independently, so a product can mix different items/fabrics across its variants. Use + Add Variant to add a new one.</p>
+  </div>
+  <div class="summary">
+    <span id="filePill" class="pill">No file loaded</span>
+    <span id="savePill" class="pill saved">Saved locally</span>
+    <span id="countPill" class="pill">0 products</span>
+    <span id="positionPill" class="pill">0 / 0</span>
+  </div>
+</header>
+<section class="toolbar">
+  <input id="searchInput" class="search" type="search" placeholder="Search product, handle, item, fabric, size">
+  <select id="vendorFilter" class="select"></select>
+  <select id="typeFilter" class="select"></select>
+  <button id="prevProduct" class="button secondary" type="button">Previous</button>
+  <button id="nextProduct" class="button" type="button">Next</button>
+  <button id="saveProduct" class="button warn" type="button">Save Product</button>
+  <button id="exportCsv" class="button secondary" type="button">Export CSV</button>
+  <button id="loadCsvBtn" class="button secondary" type="button">Load CSV</button>
+  <input id="csvFileInput" type="file" accept=".csv" style="display:none">
+</section>
+<section id="detailPanel" class="detail-panel panel"></section>
+</main>
+<div id="navModal" class="modal-backdrop" role="dialog" aria-modal="true">
+  <div class="modal">
+    <h2>Save your changes?</h2>
+    <p class="muted">This product has unsaved edits. Press Enter to save and continue. Press Esc to discard unsaved edits and move.</p>
+    <div class="modal-actions">
+      <button id="modalStay" class="button secondary" type="button">Stay Here</button>
+      <button id="modalDiscard" class="button danger" type="button">Discard &amp; Go</button>
+      <button id="modalSave" class="button" type="button">Save &amp; Go</button>
+    </div>
+  </div>
+</div>
+<script>window.UPE_PRODUCTS = [];
+window.UPE_CSV_HEADERS = [];
+window.UPE_SOURCE_ROWS = {};
+window.UPE_SOURCE_ROW_KINDS = {};
+window.UPE_STD_COLS = {};
+window.UPE_FIELD_COLS = {};
+window.UPE_CSV_FILENAME = "";</script>
+<script>
+let CSV_FILENAME = (window.UPE_CSV_FILENAME || '').trim();
+let STORAGE_KEY = 'upe_product_editor_edits_v1:' + (CSV_FILENAME || 'products.csv');
+let CSV_HEADERS = Array.isArray(window.UPE_CSV_HEADERS) ? window.UPE_CSV_HEADERS : [];
+let SOURCE_ROWS = window.UPE_SOURCE_ROWS || {};
+let SOURCE_ROW_KINDS = window.UPE_SOURCE_ROW_KINDS || {};
+let STD = window.UPE_STD_COLS || {};
+let FIELD_COLS = window.UPE_FIELD_COLS || {};
+const clone = value => structuredClone(value);
+let sourceProducts = Array.isArray(window.UPE_PRODUCTS) ? window.UPE_PRODUCTS : [];
+let products = clone(sourceProducts);
+let savedProducts = clone(products);
+let visibleProducts = products.slice();
+let selectedIndex = 0;
+let dirty = false, exportedSinceChanges = true, closeExportWarned = false;
+let pendingDelta = 0;
+let variantWidth = 100;
+
+const el = id => document.getElementById(id);
+const detailPanel = el('detailPanel'), searchInput = el('searchInput'), vendorFilter = el('vendorFilter'), typeFilter = el('typeFilter'), navModal = el('navModal');
+
+// Product-level fields shown in the edit grid (label, field key).
+const PRODUCT_TYPE_OPTIONS = ['Eastern Wear', 'Western Wear'];
+const STYLE_OPTIONS = ['Relaxed Fit', 'Smart Fit', 'Slim Fit'];
+const PRODUCT_FIELDS = [
+  ['Collection Name', 'vendor'],
+  ['Product Type', 'type', 'select', PRODUCT_TYPE_OPTIONS],
+  ['Color', 'color'],
+  ['Delivery Timeline', 'deliveryTimeline'],
+  ['Model Height', 'modelHeight'],
+  ['Model Wearing Size', 'modelWearingSize'],
+  ['Style', 'style', 'select', STYLE_OPTIONS],
+  ['Length of Top', 'lengthOfTop'],
+  ['Length of Bottom', 'lengthOfBottom'],
+  ['Material', 'material'],
+];
+const FIELD_PLACEHOLDERS = {
+  title: 'e.g., Product Name',
+  vendor: 'e.g., Studio Collection',
+  color: 'e.g., Black',
+  deliveryTimeline: 'e.g., 2 to 3 Weeks',
+  modelHeight: 'e.g., 5\'6"',
+  modelWearingSize: 'e.g., Small',
+  lengthOfTop: 'e.g., 32"',
+  lengthOfBottom: 'e.g., 38"',
+  material: 'e.g., Cotton',
+  careInstructions: 'e.g., Dry clean only',
+  description: 'e.g., Write a short description of the product...',
+};
+const VARIANT_PLACEHOLDERS = { item: 'e.g., Shirt', fabric: 'e.g., Cotton', size: 'e.g., Medium', price: 'e.g., 2500', grams: 'e.g., 500' };
+
+function htmlEscape(v) { return String(v ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;'); }
+function csvEscape(v) { const s = String(v ?? ''); return /[",\n]/.test(s) ? '"' + s.replaceAll('"', '""') + '"' : s; }
+function slashText(v) { return String(v ?? '').replace(/\s*[\n;]+\s*/g, ' / ').replace(/\s*\/\s*/g, ' / ').replace(/\s{2,}/g, ' ').trim(); }
+function txt(v) { return v === null || v === undefined || String(v).trim() === '' ? '' : String(v); }
+function parseNumber(v) { return String(v ?? '').replace(/,/g, '').trim(); }
+function formatNumber(v) { const s = parseNumber(v); if (!s) return ''; const parts = s.split('.'); const sign = parts[0].startsWith('-') ? '-' : ''; const digits = parts[0].replace(/^-/, ''); const intPart = digits.replace(/\B(?=(\d{3})+(?!\d))/g, ','); return sign + (parts.length > 1 ? intPart + '.' + parts[1] : intPart); }
+
+// ---- CSV parsing + brand onboarding (client-side equivalent of scripts/generate.py) ----
+const STD_COLUMNS = {
+  handle: ['Handle', 0], title: ['Title', 1], body: ['Body (HTML)', 2], vendor: ['Vendor', 3], type: ['Type', 5], tags: ['Tags', 6], published: ['Published', 7],
+  option1Name: ['Option1 Name', 8], option1Value: ['Option1 Value', 9], option2Name: ['Option2 Name', 11], option2Value: ['Option2 Value', 12], option3Name: ['Option3 Name', 14], option3Value: ['Option3 Value', 15],
+  sku: ['Variant SKU', 17], grams: ['Variant Grams', 18], invTracker: ['Variant Inventory Tracker', 19], invQty: ['Variant Inventory Qty', 20], invPolicy: ['Variant Inventory Policy', 21], fulfillment: ['Variant Fulfillment Service', 22],
+  price: ['Variant Price', 23], compareAt: ['Variant Compare At Price', 24], requiresShipping: ['Variant Requires Shipping', 25], taxable: ['Variant Taxable', 26], barcode: ['Variant Barcode', 31],
+  imageSrc: ['Image Src', 32], imagePosition: ['Image Position', 33], imageAlt: ['Image Alt Text', 34],
+  variantImage: ['Variant Image', 189], weightUnit: ['Variant Weight Unit', 190], taxCode: ['Variant Tax Code', 191], costPerItem: ['Cost per item', 192], status: ['Status', 193],
+};
+const FIELD_KEY_CANDIDATES = {
+  color: ['color'],
+  deliveryTimeline: ['delivery_timeline', 'rts_delivery_timeline_local', 'rts_delivery_timeline_international'],
+  modelHeight: ['model_height'],
+  modelWearingSize: ['model_wearing_size', 'model_wearing'],
+  style: ['style', 'shirt_style'],
+  lengthOfTop: ['length_of_top'],
+  lengthOfBottom: ['length_of_bottom'],
+  material: ['material'],
+  careInstructions: ['care_instructions', 'care_instruction', 'wash_care'],
+};
+const METAFIELD_PATTERN = /^(.+?)\s+\(product\.metafields\.custom\.([^)]+)\)$/;
+
+function parseCsvText(text) {
+  text = text.replace(/^﻿/, '');
+  const rows = []; let row = [], field = '', inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQuotes) {
+      if (c === '"') { if (text[i + 1] === '"') { field += '"'; i++; } else { inQuotes = false; } }
+      else field += c;
+    } else if (c === '"') { inQuotes = true; }
+    else if (c === ',') { row.push(field); field = ''; }
+    else if (c === '\r') { /* skip, \n handles the break */ }
+    else if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
+    else field += c;
+  }
+  if (field.length || row.length) { row.push(field); rows.push(row); }
+  return rows.filter(r => !(r.length === 1 && r[0] === ''));
+}
+function hidx(headers, name, def) { const i = headers.indexOf(name); return i === -1 ? def : i; }
+function buildStdCols(headers) { const out = {}; for (const k in STD_COLUMNS) { const [name, def] = STD_COLUMNS[k]; out[k] = hidx(headers, name, def); } return out; }
+function buildMetafieldCols(headers) { const cols = {}; headers.forEach((h, i) => { const m = METAFIELD_PATTERN.exec(h); if (m) cols[m[2]] = i; }); return cols; }
+function buildFieldCols(metafieldCols) {
+  const out = {};
+  for (const field in FIELD_KEY_CANDIDATES) { for (const key of FIELD_KEY_CANDIDATES[field]) { if (key in metafieldCols) { out[field] = metafieldCols[key]; break; } } }
+  return out;
+}
+function cget(row, idx, def = '') { if (idx == null || idx >= row.length) return def; return row[idx] ?? def; }
+function safeFloat(v) { const n = parseFloat(v); return Number.isNaN(n) ? null : n; }
+function formatPrice(v) { const s = (v || '').trim(); if (!s) return ''; const n = parseFloat(s); return Number.isNaN(n) ? s : n.toFixed(2); }
+function isVariantRow(row, std) {
+  // Shopify CSVs can include extra rows per handle that only carry an additional
+  // product image (Handle + Image Src/Position only, no option values/SKU/price).
+  // Those aren't real variants and must not be shown/edited as one.
+  return ['option1Value', 'option2Value', 'option3Value', 'sku', 'price'].some(key => cget(row, std[key]).trim());
+}
+function buildVariantFromRow(row, std) {
+  const opt1Name = cget(row, std.option1Name), opt1Val = cget(row, std.option1Value);
+  const opt2Name = cget(row, std.option2Name), opt2Val = cget(row, std.option2Value);
+  const opt3Name = cget(row, std.option3Name), opt3Val = cget(row, std.option3Value);
+  const statusVal = cget(row, std.status).trim();
+  return {
+    option1Name: opt1Name, option1Value: opt1Val, option2Name: opt2Name, option2Value: opt2Val, option3Name: opt3Name, option3Value: opt3Val,
+    item: opt1Val, fabric: opt2Val, size: opt3Val,
+    sku: cget(row, std.sku).trim(), grams: cget(row, std.grams).trim(), inventoryTracker: cget(row, std.invTracker).trim(),
+    inventoryQty: cget(row, std.invQty).trim() || '0', inventoryPolicy: cget(row, std.invPolicy).trim(), fulfillment: cget(row, std.fulfillment).trim(),
+    price: formatPrice(cget(row, std.price)), compareAtPrice: formatPrice(cget(row, std.compareAt)),
+    requiresShipping: cget(row, std.requiresShipping).trim(), taxable: cget(row, std.taxable).trim(),
+    barcode: cget(row, std.barcode).trim(), weightUnit: cget(row, std.weightUnit).trim(), taxCode: cget(row, std.taxCode).trim(),
+    costPerItem: cget(row, std.costPerItem).trim(), status: statusVal || 'active', image: cget(row, std.imageSrc).trim(),
+  };
+}
+function buildProductFromGroup(handle, grp, std, fieldCols) {
+  const first = grp[0];
+  const rowKinds = [];
+  const variants = [];
+  grp.forEach((row, idx) => {
+    if (isVariantRow(row, std)) { const v = buildVariantFromRow(row, std); v._sourceIndex = idx; variants.push(v); rowKinds.push('variant'); }
+    else rowKinds.push('image');
+  });
+  const prices = variants.map(v => safeFloat(v.price)).filter(p => p !== null);
+  let image = '';
+  for (const row of grp) { const src = cget(row, std.imageSrc).trim(); if (src) { image = src; break; } }
+  const product = {
+    handle, title: cget(first, std.title).trim(), description: cget(first, std.body).trim(), vendor: cget(first, std.vendor).trim(),
+    type: cget(first, std.type).trim(), tags: cget(first, std.tags).trim(), published: cget(first, std.published).trim() || 'true',
+    status: cget(first, std.status).trim() || 'active', image, imageAlt: cget(first, std.imageAlt).trim(), url: '',
+    priceMin: prices.length ? Math.min(...prices) : 0, priceMax: prices.length ? Math.max(...prices) : 0, variantCount: variants.length, variants,
+  };
+  for (const field in FIELD_KEY_CANDIDATES) { const col = fieldCols[field]; product[field] = col != null ? cget(first, col).trim() : ''; }
+  return { product, rowKinds };
+}
+function buildCatalogFromCsv(headers, dataRows) {
+  const std = buildStdCols(headers);
+  const fieldCols = buildFieldCols(buildMetafieldCols(headers));
+  const groups = new Map();
+  for (const row of dataRows) {
+    const h = cget(row, std.handle).trim();
+    if (!h) continue;
+    if (!groups.has(h)) groups.set(h, []);
+    groups.get(h).push(row);
+  }
+  const catalogProducts = [];
+  const sourceRows = {};
+  const sourceRowKinds = {};
+  const ncol = headers.length;
+  for (const [handle, grp] of groups) {
+    const { product, rowKinds } = buildProductFromGroup(handle, grp, std, fieldCols);
+    catalogProducts.push(product);
+    sourceRowKinds[handle] = rowKinds;
+    sourceRows[handle] = grp.map(row => { const out = row.slice(); while (out.length < ncol) out.push(''); return out; });
+  }
+  return { products: catalogProducts, sourceRows, sourceRowKinds, std, fieldCols };
+}
+function updateFilePill() { const pill = el('filePill'); if (pill) pill.textContent = CSV_FILENAME || 'No file loaded'; }
+function loadFromCsvText(text, filename) {
+  const rows = parseCsvText(text);
+  if (!rows.length) { alert('This CSV appears to be empty.'); return; }
+  const headers = rows[0];
+  const { products: parsedProducts, sourceRows, sourceRowKinds, std, fieldCols } = buildCatalogFromCsv(headers, rows.slice(1));
+  if (!parsedProducts.length) { alert('No products found in that CSV (no rows with a Handle).'); return; }
+  CSV_HEADERS = headers;
+  SOURCE_ROWS = sourceRows;
+  SOURCE_ROW_KINDS = sourceRowKinds;
+  STD = std;
+  FIELD_COLS = fieldCols;
+  CSV_FILENAME = (filename || 'products.csv').trim() || 'products.csv';
+  STORAGE_KEY = 'upe_product_editor_edits_v1:' + CSV_FILENAME;
+  sourceProducts = parsedProducts;
+  products = clone(sourceProducts);
+  savedProducts = clone(products);
+  visibleProducts = products.slice();
+  selectedIndex = 0; dirty = false; exportedSinceChanges = true; closeExportWarned = false; pendingDelta = 0;
+  loadSaved();
+  exportedSinceChanges = !hasChangesFromSource();
+  updateFilePill();
+  populateFilters();
+  applyFilters();
+  const missing = Object.keys(FIELD_KEY_CANDIDATES).filter(f => !(f in FIELD_COLS));
+  if (missing.length) console.warn('No matching metafield column for: ' + missing.join(', ') + '. These fields stay editable in the UI but will not be written back into the exported CSV until the metafield exists in Shopify.');
+}
+function handleCsvFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => loadFromCsvText(String(reader.result), file.name);
+  reader.onerror = () => alert('Could not read that file.');
+  reader.readAsText(file, 'utf-8');
+}
+
+function isSlashField(field) { return field === 'fabric' || field === 'size'; }
+function isNumberField(field) { return field === 'price' || field === 'grams'; }
+function displayValue(field, value) { if (isSlashField(field)) return slashText(value); if (isNumberField(field)) return formatNumber(value); return txt(value); }
+function storeFieldValue(field, value) { if (isNumberField(field)) return parseNumber(value); if (isSlashField(field)) return slashText(value); return txt(value); }
+
+function currentProduct() { return visibleProducts[selectedIndex]; }
+function productIndexByHandle(list, handle) { return list.findIndex(p => p.handle === handle); }
+function sourceProduct(handle) { return sourceProducts[productIndexByHandle(sourceProducts, handle)]; }
+function savedProduct(handle) { return savedProducts[productIndexByHandle(savedProducts, handle)]; }
+function hasChangesFromSource() { try { return JSON.stringify(products) !== JSON.stringify(sourceProducts); } catch (e) { return dirty; } }
+function setDirty(value = true) { dirty = value; if (value) exportedSinceChanges = false; const pill = el('savePill'); pill.textContent = value ? 'Unsaved changes' : 'Saved locally'; pill.className = 'pill ' + (value ? 'dirty' : 'saved'); }
+function saveAll() { localStorage.setItem(STORAGE_KEY, JSON.stringify(products)); savedProducts = clone(products); setDirty(false); }
+function loadSaved() { try { const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); if (Array.isArray(saved) && saved.length) { products = saved; savedProducts = clone(saved); visibleProducts = products.slice(); } } catch (e) {} }
+
+function searchable(p) {
+  return [p.title, p.handle, p.vendor, p.type, p.tags, p.description, p.color, p.deliveryTimeline, p.modelHeight, p.modelWearingSize, p.style, p.lengthOfTop, p.lengthOfBottom, p.material, p.careInstructions,
+    ...(p.variants || []).flatMap(v => [v.item, v.fabric, v.size, v.sku])].join(' ').toLowerCase();
+}
+function populateFilters() {
+  const vendors = new Set(), types = new Set();
+  products.forEach(p => { if (p.vendor) vendors.add(p.vendor); if (p.type) types.add(p.type); });
+  const vendorList = [...vendors].sort(), typeList = [...types].sort();
+  vendorFilter.innerHTML = '<option value="">All vendors</option>' + vendorList.map(v => `<option>${htmlEscape(v)}</option>`).join('');
+  typeFilter.innerHTML = '<option value="">All types</option>' + typeList.map(v => `<option>${htmlEscape(v)}</option>`).join('');
+}
+
+function updateProductField(field, value) { const p = currentProduct(); if (field === 'description') p.description = value; else p[field] = txt(value); setDirty(); }
+function updateVariant(vi, field, value) {
+  const p = currentProduct(); const v = p.variants[vi]; if (!v) return;
+  const next = storeFieldValue(field, value);
+  v[field] = next;
+  if (field === 'price') {
+    const vals = p.variants.map(vv => Number(parseNumber(vv.price) || 0)).filter(n => !Number.isNaN(n));
+    if (vals.length) { p.priceMin = Math.min(...vals); p.priceMax = Math.max(...vals); }
+  }
+  setDirty();
+}
+
+function input({ label, value, field, readonly = false, placeholder = '' }) {
+  return `<div class="edit-field"><label>${label}</label><input class="field ${readonly ? 'readonly' : ''}" ${readonly ? 'readonly' : ''} placeholder="${htmlEscape(placeholder)}" data-field="${field}" value="${htmlEscape(displayValue(field, value))}"></div>`;
+}
+function selectField(label, value, field, options) {
+  const val = txt(value);
+  const known = options.includes(val);
+  const opts = ['<option value="" disabled ' + (!val ? 'selected' : '') + '>Select…</option>']
+    .concat(options.map(o => `<option value="${htmlEscape(o)}" ${o === val ? 'selected' : ''}>${htmlEscape(o)}</option>`));
+  if (val && !known) opts.push(`<option value="${htmlEscape(val)}" selected>${htmlEscape(val)}</option>`);
+  return `<div class="edit-field"><label>${label}</label><select class="field" data-field="${field}">${opts.join('')}</select></div>`;
+}
+function area(label, value, field, placeholder = '') {
+  return `<div class="edit-field full"><label>${label}</label><textarea placeholder="${htmlEscape(placeholder)}" data-field="${field}">${htmlEscape(displayValue(field, value))}</textarea></div>`;
+}
+function variantSelect(vi, field, value) {
+  const SIZES = ['XS', 'S', 'M', 'ML', 'L', 'XL', 'One Size', 'Customised'];
+  const listId = `size-list-${vi}`;
+  const opts = SIZES.map(s => `<option value="${htmlEscape(s)}">`).join('');
+  return `<span class="cell-wrap"><input class="variant-input" list="${listId}" placeholder="${htmlEscape(VARIANT_PLACEHOLDERS.size)}" data-variant-index="${vi}" data-variant-field="size" value="${htmlEscape(value || '')}"><span class="fill-handle" data-variant-index="${vi}" data-variant-field="size" title="Drag to fill down"></span></span><datalist id="${listId}">${opts}</datalist>`;
+}
+function variantInput(vi, field, value, placeholderOverride) {
+  const placeholder = placeholderOverride ?? VARIANT_PLACEHOLDERS[field] ?? '';
+  return `<span class="cell-wrap"><input class="variant-input" placeholder="${htmlEscape(placeholder)}" data-variant-index="${vi}" data-variant-field="${field}" value="${htmlEscape(displayValue(field, value))}"><span class="fill-handle" data-variant-index="${vi}" data-variant-field="${field}" title="Drag to fill down"></span></span>`;
+}
+function blankVariant() {
+  return { option1Name: 'Item', option1Value: '', option2Name: 'Fabric', option2Value: '', option3Name: 'Size', option3Value: '', item: '', fabric: '', size: '', sku: '', grams: '', inventoryTracker: '', inventoryQty: '0', inventoryPolicy: '', fulfillment: '', price: '', compareAtPrice: '', requiresShipping: 'true', taxable: 'true', barcode: '', weightUnit: 'g', taxCode: '', costPerItem: '', status: 'active', image: '' };
+}
+function newVariantFrom(template) {
+  const { _sourceIndex, ...rest } = template;
+  return { ...rest, size: '', option3Value: '', sku: '', inventoryQty: '0' };
+}
+function addVariantRow(vi) {
+  const p = currentProduct(); const t = p.variants[vi] || blankVariant();
+  p.variants.splice(vi + 1, 0, newVariantFrom(t));
+  setDirty(); renderProduct(selectedIndex, false);
+}
+function addNewVariantRow() {
+  const p = currentProduct(); const t = p.variants[p.variants.length - 1] || blankVariant();
+  p.variants.push(newVariantFrom(t));
+  setDirty(); renderProduct(selectedIndex, false);
+}
+function removeVariantRow(vi) {
+  const p = currentProduct(); if (vi === 0 || !p.variants[vi]) return;
+  p.variants.splice(vi, 1); setDirty(); renderProduct(selectedIndex, false);
+}
+function setVariantWidth(next) {
+  variantWidth = Math.max(80, Math.min(180, next));
+  document.querySelectorAll('.variant-table').forEach(t => t.style.setProperty('--variant-table-width', variantWidth + '%'));
+  const label = el('widthLabel'); if (label) label.textContent = variantWidth + '%';
+}
+
+function secondOptionLabel(p) { return p.type === 'Western Wear' ? 'Color' : 'Fabric'; }
+function variantTable(p) {
+  if (!p.variants?.length) return '<p class="muted">No variants.</p>';
+  const secondLabel = secondOptionLabel(p);
+  const secondPlaceholder = secondLabel === 'Color' ? 'e.g., Black' : VARIANT_PLACEHOLDERS.fabric;
+  return `<div class="variant-table" style="--variant-table-width:${variantWidth}%"><table><thead><tr><th>Item</th><th>${secondLabel}</th><th>Size</th><th>Price</th><th>Volumetric Weight</th><th></tr></thead><tbody>${p.variants.map((v, vi) => `<tr><td>${variantInput(vi, 'item', v.item)}</td><td>${variantInput(vi, 'fabric', v.fabric, secondPlaceholder)}</td><td>${variantSelect(vi, 'size', v.size)}</td><td>${variantInput(vi, 'price', v.price)}</td><td>${variantInput(vi, 'grams', v.grams)}</td><td style="white-space:nowrap;width:56px"><button class="variant-row-btn" data-add-variant="${vi}" type="button" title="Add row">+</button>${vi > 0 ? `<button class="variant-row-btn remove" data-remove-variant="${vi}" type="button" title="Remove row">&times;</button>` : ''}</td></tr>`).join('')}</tbody></table></div>`;
+}
+
+function renderEmpty() {
+  detailPanel.innerHTML = '<div class="empty-state"><div><h2>No products found</h2><p>Clear filters or try a different search.</p></div></div>';
+  el('positionPill').textContent = '0 / 0'; el('prevProduct').disabled = true; el('nextProduct').disabled = true;
+  el('countPill').textContent = '0 / ' + products.length + ' products';
+}
+function renderUploadPrompt() {
+  detailPanel.innerHTML = `<div class="empty-state dropzone" id="uploadDropZone"><div>
+    <h2>Load a product CSV to get started</h2>
+    <p class="muted">Export your brand's products from Shopify as a CSV, then load it here — or drag and drop the file onto this area. Everything runs in your browser; no server or Python step needed.</p>
+    <button id="uploadPromptBtn" class="button" type="button" style="margin-top:14px">Choose CSV File</button>
+  </div></div>`;
+  el('positionPill').textContent = '0 / 0'; el('prevProduct').disabled = true; el('nextProduct').disabled = true;
+  el('countPill').textContent = '0 products';
+  const btn = el('uploadPromptBtn');
+  if (btn) btn.addEventListener('click', () => el('csvFileInput').click());
+  const zone = el('uploadDropZone');
+  if (zone) {
+    zone.addEventListener('dragover', e => e.preventDefault());
+    zone.addEventListener('drop', e => { e.preventDefault(); const file = e.dataTransfer.files && e.dataTransfer.files[0]; if (file) handleCsvFile(file); });
+  }
+}
+function renderProduct(index, resetScroll = true) {
+  if (!CSV_HEADERS.length) { renderUploadPrompt(); return; }
+  if (!visibleProducts.length) { renderEmpty(); return; }
+  selectedIndex = Math.max(0, Math.min(index, visibleProducts.length - 1));
+  const p = currentProduct();
+  el('countPill').textContent = visibleProducts.length + ' / ' + products.length + ' products';
+  el('positionPill').textContent = (selectedIndex + 1) + ' / ' + visibleProducts.length;
+  el('prevProduct').disabled = selectedIndex === 0; el('nextProduct').disabled = selectedIndex === visibleProducts.length - 1;
+
+  const fieldInputs = PRODUCT_FIELDS.map(([label, field, kind, options]) => kind === 'select'
+    ? selectField(label, p[field], field, options)
+    : input({ label, value: p[field], field, placeholder: FIELD_PLACEHOLDERS[field] || '' })).join('');
+
+  detailPanel.innerHTML = `<div class="detail-grid">
+    <article class="panel"><div class="image-frame"><img id="productImage" src="${htmlEscape(p.image || '')}" style="${p.image ? 'display:block' : 'display:none'}" alt=""><div class="image-empty" style="${p.image ? 'display:none' : 'display:grid'}">No image available.</div></div></article>
+    <article class="panel details">
+      <p class="kicker">Product</p>
+      <p class="field-legend"><span class="legend-editable">Editable</span><span class="legend-readonly">Read-only</span></p>
+      <input class="field product-title" data-field="title" placeholder="${htmlEscape(FIELD_PLACEHOLDERS.title)}" value="${htmlEscape(p.title || '')}">
+      <div class="edit-grid">
+        ${input({ label: 'Handle', value: p.handle, field: 'handle', readonly: true })}
+        <div class="edit-field"><label>Status</label><div class="status-row"><button class="status-toggle ${p.status === 'active' ? 'active' : ''}" data-status="active" type="button">Active</button><button class="status-toggle ${p.status === 'draft' ? 'active' : ''}" data-status="draft" type="button">Draft</button></div></div>
+        ${fieldInputs}
+        ${area('Care Instructions', p.careInstructions, 'careInstructions', FIELD_PLACEHOLDERS.careInstructions)}
+        <div class="edit-field full"><label>Description</label><div class="rte-toolbar"><button type="button" class="rte-btn" data-rte="bold" title="Bold (Ctrl/Cmd+B)"><b>B</b></button><button type="button" class="rte-btn" data-rte="italic" title="Italic (Ctrl/Cmd+I)"><i>I</i></button><button type="button" class="rte-btn" data-rte="underline" title="Underline (Ctrl/Cmd+U)"><u>U</u></button></div><div class="description description-edit" contenteditable="true" data-placeholder="${htmlEscape(FIELD_PLACEHOLDERS.description)}" data-field="description"></div></div>
+      </div>
+    </article>
+  </div>
+  <article class="panel">
+    <div class="card-head">
+      <div><h3>Variants</h3><p class="field-legend" style="margin:6px 0 0"><span class="legend-editable">Editable</span><span class="legend-readonly">Read-only</span></p></div>
+      <div class="width-controls"><button class="mini-button" data-width="down" type="button">-</button><span id="widthLabel" class="pill">${variantWidth}%</span><button class="mini-button" data-width="up" type="button">+</button><span class="pill">${p.variants.length} variants</span><button class="button secondary" id="addVariantBtn" type="button">+ Add Variant</button></div>
+    </div>
+    <div class="content">${variantTable(p)}</div>
+  </article>`;
+
+  const descEl = detailPanel.querySelector('[data-field="description"]');
+  if (descEl) descEl.innerHTML = p.description || '';
+  if (resetScroll) detailPanel.scrollTop = 0;
+}
+
+function applyFilters() {
+  const term = searchInput.value.trim().toLowerCase(), vendor = vendorFilter.value, type = typeFilter.value;
+  visibleProducts = products.filter(p => (!vendor || p.vendor === vendor) && (!type || p.type === type) && (!term || searchable(p).includes(term)));
+  selectedIndex = 0; renderProduct(0);
+}
+function doMove(delta) { if (!visibleProducts.length) return; renderProduct(selectedIndex + delta); }
+function requestMove(delta) { if (!visibleProducts.length) return; if (dirty) { pendingDelta = delta; showNavModal(); return; } doMove(delta); }
+function showNavModal() { navModal.classList.add('show'); el('modalSave').focus(); }
+function hideNavModal() { navModal.classList.remove('show'); }
+function discardCurrentUnsaved() {
+  const p = currentProduct(); const saved = savedProduct(p.handle);
+  if (saved) { const idx = productIndexByHandle(products, p.handle); products[idx] = clone(saved); visibleProducts[selectedIndex] = products[idx]; }
+  setDirty(false);
+}
+function modalSaveAndGo() { saveAll(); hideNavModal(); doMove(pendingDelta); }
+function modalDiscardAndGo() { discardCurrentUnsaved(); hideNavModal(); doMove(pendingDelta); }
+
+// ---- CSV export ----
+function padRow(row, len) { const out = Array(len).fill(''); for (let i = 0; i < row.length; i++) out[i] = row[i] ?? ''; return out; }
+function blankRow() { return Array(CSV_HEADERS.length).fill(''); }
+function variantOnlyRow(template) {
+  const row = template ? padRow(template, CSV_HEADERS.length) : blankRow();
+  ['title', 'body', 'vendor', 'type', 'tags', 'published', 'imageAlt', 'option1Name', 'option2Name', 'option3Name'].forEach(key => { const idx = STD[key]; if (idx != null) row[idx] = ''; });
+  Object.values(FIELD_COLS).forEach(idx => { if (idx != null) row[idx] = ''; });
+  return row;
+}
+function set(row, key, value) { const idx = STD[key]; if (idx != null && value !== undefined) row[idx] = value ?? ''; }
+function mergeProductRow(row, p, isFirst) {
+  if (!isFirst) return row;
+  set(row, 'title', p.title || '');
+  set(row, 'body', p.description || '');
+  set(row, 'vendor', p.vendor || '');
+  set(row, 'type', p.type || '');
+  set(row, 'tags', p.tags || '');
+  set(row, 'published', p.published || '');
+  set(row, 'status', p.status || 'active');
+  if (p.image) set(row, 'imageSrc', p.image);
+  if (p.imageAlt) set(row, 'imageAlt', p.imageAlt);
+  Object.keys(FIELD_COLS).forEach(field => { const idx = FIELD_COLS[field]; if (idx != null) row[idx] = p[field] || ''; });
+  return row;
+}
+function mergeVariantRow(row, v, isFirst, p) {
+  if (isFirst) {
+    set(row, 'option1Name', 'Item');
+    set(row, 'option2Name', secondOptionLabel(p));
+    set(row, 'option3Name', 'Size');
+  } else {
+    ['option1Name', 'option2Name', 'option3Name'].forEach(key => set(row, key, ''));
+  }
+  set(row, 'option1Value', v.item ?? '');
+  set(row, 'option2Value', v.fabric ?? '');
+  set(row, 'option3Value', v.size ?? '');
+  set(row, 'sku', v.sku ?? '');
+  set(row, 'grams', v.grams ?? '');
+  set(row, 'invTracker', v.inventoryTracker ?? '');
+  set(row, 'invQty', v.inventoryQty ?? '');
+  set(row, 'invPolicy', v.inventoryPolicy ?? '');
+  set(row, 'fulfillment', v.fulfillment ?? '');
+  set(row, 'price', v.price ?? '');
+  set(row, 'compareAt', v.compareAtPrice ?? '');
+  set(row, 'requiresShipping', v.requiresShipping ?? '');
+  set(row, 'taxable', v.taxable ?? '');
+  set(row, 'barcode', v.barcode ?? '');
+  set(row, 'weightUnit', v.weightUnit ?? '');
+  set(row, 'taxCode', v.taxCode ?? '');
+  set(row, 'costPerItem', v.costPerItem ?? '');
+  set(row, 'status', v.status ?? 'active');
+  return row;
+}
+function sourceVariantBySourceIndex(handle, sourceIndex) { const p = sourceProduct(handle); return p?.variants?.find(v => v._sourceIndex === sourceIndex) || null; }
+function normField(field, value) { const v = field === 'fabric' ? slashText(value) : String(value ?? ''); return v.trim().toLowerCase(); }
+function variantFlags(v, src) {
+  if (!src) return { fabric: '1', sku: '1' };
+  const fabricChanged = normField('fabric', v.fabric) !== normField('fabric', src.fabric);
+  const itemChanged = normField('item', v.item) !== normField('item', src.item);
+  const sizeChanged = normField('size', v.size) !== normField('size', src.size);
+  return { fabric: fabricChanged ? '1' : '', sku: (fabricChanged || itemChanged || sizeChanged) ? '1' : '' };
+}
+function rowsForProduct(p) {
+  const source = SOURCE_ROWS[p.handle] || [];
+  const kinds = SOURCE_ROW_KINDS[p.handle] || source.map(() => 'variant');
+  const rows = [];
+  let anyRowEmitted = false;
+  // Walk every original CSV row for this handle in order: pass image-only rows
+  // through untouched, merge variant rows that still exist, and drop variant
+  // rows whose variant was deleted in the editor.
+  for (let i = 0; i < source.length; i++) {
+    const isFirst = !anyRowEmitted;
+    if (kinds[i] === 'image') {
+      const base = padRow(source[i], CSV_HEADERS.length);
+      rows.push([...mergeProductRow(base, p, isFirst), '', '']);
+      anyRowEmitted = true;
+      continue;
+    }
+    const v = (p.variants || []).find(vv => vv._sourceIndex === i);
+    if (!v) continue; // variant existed in source but was deleted in the editor
+    const base = padRow(source[i], CSV_HEADERS.length);
+    const merged = mergeVariantRow(mergeProductRow(base, p, isFirst), v, isFirst, p);
+    const flags = variantFlags(v, sourceVariantBySourceIndex(p.handle, i));
+    rows.push([...merged, flags.fabric, flags.sku]);
+    anyRowEmitted = true;
+  }
+  // Brand-new variants added in the editor (no matching original CSV row).
+  const newVariants = (p.variants || []).filter(v => v._sourceIndex == null || v._sourceIndex >= source.length);
+  for (const v of newVariants) {
+    const isFirst = !anyRowEmitted;
+    const base = source[0] ? variantOnlyRow(source[0]) : blankRow();
+    const merged = mergeVariantRow(mergeProductRow(base, p, isFirst), v, isFirst, p);
+    rows.push([...merged, '1', '1']);
+    anyRowEmitted = true;
+  }
+  return rows;
+}
+function downloadCsvFile(filename, rows) {
+  const csv = '﻿' + rows.map(r => r.map(csvEscape).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+function changesLogFilename() { return CSV_FILENAME.replace(/\.csv$/i, '') + ' - changes log.csv'; }
+function plainText(v) { const d = document.createElement('div'); d.innerHTML = String(v ?? ''); return (d.textContent || '').trim(); }
+function logValue(field, value) {
+  if (field === 'description') return plainText(value);
+  if (isNumberField(field)) return formatNumber(value) || String(value ?? '').trim();
+  if (isSlashField(field)) return slashText(value);
+  return String(value ?? '').trim();
+}
+function logDiff(field, before, after) { return logValue(field, before) !== logValue(field, after); }
+function buildChangesLogRows() {
+  const header = ['handle', 'variant_index', 'variant_size', 'field', 'original_value', 'current_value', 'change_type', 'fabric_flag', 'sku_flag'];
+  const rows = [header];
+  const productFields = ['title', 'status', 'description', ...PRODUCT_FIELDS.map(f => f[1]), 'careInstructions', 'tags'];
+  const variantFields = ['item', 'fabric', 'size', 'price', 'grams', 'sku', 'status'];
+  products.forEach(p => {
+    const srcP = sourceProduct(p.handle);
+    if (!srcP) return;
+    productFields.forEach(f => { if (logDiff(f, srcP[f], p[f])) rows.push([p.handle, '', '', f, logValue(f, srcP[f]), logValue(f, p[f]), 'modified', '', '']); });
+    const maxVi = Math.max(srcP.variants?.length || 0, p.variants?.length || 0);
+    for (let vi = 0; vi < maxVi; vi++) {
+      const v = p.variants?.[vi]; const sv = srcP.variants?.[vi];
+      const size = v ? logValue('size', v.size) : sv ? logValue('size', sv.size) : '';
+      if (!sv && v) { const flags = variantFlags(v, null); rows.push([p.handle, String(vi), size, '*variant*', '(new)', [logValue('item', v.item), logValue('fabric', v.fabric), logValue('size', v.size), logValue('price', v.price)].filter(Boolean).join(' / ') || '(empty)', 'added', flags.fabric, flags.sku]); continue; }
+      if (sv && !v) { rows.push([p.handle, String(vi), size, '*variant*', [logValue('item', sv.item), logValue('fabric', sv.fabric), logValue('size', sv.size)].filter(Boolean).join(' / ') || '(empty)', '(deleted)', 'removed', '', '']); continue; }
+      if (!sv || !v) continue;
+      const flags = variantFlags(v, sv);
+      variantFields.forEach(f => { if (logDiff(f, sv[f], v[f])) rows.push([p.handle, String(vi), size, f, logValue(f, sv[f]), logValue(f, v[f]), 'modified', flags.fabric, flags.sku]); });
+    }
+  });
+  if (rows.length === 1) rows.push(['', '', '', '(none)', '', '', 'no changes', '', '']);
+  return rows;
+}
+function exportCsv() {
+  saveAll();
+  if (!CSV_HEADERS.length) { alert('Load a product CSV first (use the Load CSV button).'); return; }
+  const allRows = [[...CSV_HEADERS, 'fabric_flag', 'sku_flag']];
+  products.forEach(p => allRows.push(...rowsForProduct(p)));
+  downloadCsvFile(CSV_FILENAME, allRows);
+  setTimeout(() => downloadCsvFile(changesLogFilename(), buildChangesLogRows()), 300);
+  exportedSinceChanges = true;
+}
+
+// ---- events ----
+detailPanel.addEventListener('input', e => {
+  const t = e.target;
+  if (t.dataset.field && !t.readOnly) { if (t.dataset.field === 'description') updateProductField('description', t.innerHTML); else updateProductField(t.dataset.field, t.value); }
+  if (t.dataset.variantField !== undefined && t.dataset.variantIndex !== undefined) updateVariant(Number(t.dataset.variantIndex), t.dataset.variantField, t.value);
+  // Product Type drives the Fabric/Color variant column label — refresh the panel so it updates immediately.
+  if (t.dataset.field === 'type') renderProduct(selectedIndex, false);
+});
+detailPanel.addEventListener('change', e => {
+  const t = e.target;
+  if (t.dataset.variantField !== undefined && t.dataset.variantIndex !== undefined) updateVariant(Number(t.dataset.variantIndex), t.dataset.variantField, t.value);
+});
+detailPanel.addEventListener('click', e => {
+  const status = e.target.closest('[data-status]');
+  if (status) { updateProductField('status', status.dataset.status); renderProduct(selectedIndex, false); return; }
+  const width = e.target.closest('[data-width]');
+  if (width) { setVariantWidth(variantWidth + (width.dataset.width === 'up' ? 20 : -20)); return; }
+  const av = e.target.closest('[data-add-variant]');
+  if (av) { addVariantRow(Number(av.dataset.addVariant)); return; }
+  const rv = e.target.closest('[data-remove-variant]');
+  if (rv) { removeVariantRow(Number(rv.dataset.removeVariant)); return; }
+  if (e.target.id === 'addVariantBtn') { addNewVariantRow(); return; }
+  const rte = e.target.closest('[data-rte]');
+  if (rte) { const ed = detailPanel.querySelector('[data-field="description"]'); if (ed) { ed.focus(); document.execCommand(rte.dataset.rte, false, null); updateProductField('description', ed.innerHTML); refreshRteState(); } return; }
+});
+function refreshRteState() {
+  const ed = detailPanel.querySelector('[data-field="description"]');
+  const sel = window.getSelection();
+  const inside = ed && sel && sel.rangeCount && ed.contains(sel.anchorNode);
+  detailPanel.querySelectorAll('[data-rte]').forEach(b => { let on = false; try { on = inside && document.queryCommandState(b.dataset.rte); } catch (e) {} b.classList.toggle('active', !!on); });
+}
+detailPanel.addEventListener('mousedown', e => {
+  if (e.target.closest('[data-rte]')) e.preventDefault();
+  const handle = e.target.closest('.fill-handle');
+  if (handle) { e.preventDefault(); startFillDrag(handle); }
+});
+document.addEventListener('selectionchange', refreshRteState);
+
+// ---- Excel-style variant table helpers: Enter moves down a column; drag the
+// fill handle to copy a cell's value down into the rows you drag over. ----
+detailPanel.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  const t = e.target;
+  if (!t.classList || !t.classList.contains('variant-input')) return;
+  e.preventDefault();
+  const field = t.dataset.variantField, vi = Number(t.dataset.variantIndex);
+  const next = detailPanel.querySelector(`.variant-input[data-variant-index="${vi + 1}"][data-variant-field="${field}"]`);
+  if (next) { next.focus(); if (next.select) next.select(); }
+});
+let fillDrag = null;
+function startFillDrag(handle) {
+  const field = handle.dataset.variantField, startRow = Number(handle.dataset.variantIndex);
+  const p = currentProduct(); if (!p || !p.variants[startRow]) return;
+  fillDrag = { field, startRow, endRow: startRow, value: p.variants[startRow][field] };
+  markFillRange();
+}
+function markFillRange() {
+  detailPanel.querySelectorAll('.cell-wrap.fill-target').forEach(el => el.classList.remove('fill-target'));
+  if (!fillDrag) return;
+  const { field, startRow, endRow } = fillDrag;
+  const lo = Math.min(startRow, endRow), hi = Math.max(startRow, endRow);
+  for (let vi = lo; vi <= hi; vi++) {
+    const cell = detailPanel.querySelector(`.fill-handle[data-variant-index="${vi}"][data-variant-field="${field}"]`);
+    if (cell) cell.closest('.cell-wrap')?.classList.add('fill-target');
+  }
+}
+function commitFillDrag() {
+  if (!fillDrag) return;
+  const { field, startRow, endRow, value } = fillDrag;
+  const lo = Math.min(startRow, endRow), hi = Math.max(startRow, endRow);
+  for (let vi = lo; vi <= hi; vi++) { if (vi !== startRow) updateVariant(vi, field, value); }
+  fillDrag = null;
+  renderProduct(selectedIndex, false);
+}
+document.addEventListener('mousemove', e => {
+  if (!fillDrag) return;
+  const el = document.elementFromPoint(e.clientX, e.clientY);
+  const cell = el && el.closest(`[data-variant-field="${fillDrag.field}"]`);
+  if (cell && cell.dataset.variantIndex !== undefined) { fillDrag.endRow = Number(cell.dataset.variantIndex); markFillRange(); }
+});
+document.addEventListener('mouseup', () => { if (fillDrag) commitFillDrag(); });
+
+searchInput.addEventListener('input', applyFilters);
+vendorFilter.addEventListener('change', applyFilters);
+typeFilter.addEventListener('change', applyFilters);
+el('prevProduct').addEventListener('click', () => requestMove(-1));
+el('nextProduct').addEventListener('click', () => requestMove(1));
+el('saveProduct').addEventListener('click', saveAll);
+el('exportCsv').addEventListener('click', exportCsv);
+el('loadCsvBtn').addEventListener('click', () => {
+  if (CSV_HEADERS.length && dirty && !confirm('Loading a new CSV will replace the currently loaded catalog. Unsaved edits to the current product will be lost. Continue?')) return;
+  el('csvFileInput').click();
+});
+el('csvFileInput').addEventListener('change', e => { const file = e.target.files[0]; if (file) handleCsvFile(file); e.target.value = ''; });
+el('modalSave').addEventListener('click', modalSaveAndGo);
+el('modalDiscard').addEventListener('click', modalDiscardAndGo);
+el('modalStay').addEventListener('click', hideNavModal);
+document.addEventListener('keydown', event => {
+  if (navModal.classList.contains('show')) { if (event.key === 'Enter') { event.preventDefault(); modalSaveAndGo(); } else if (event.key === 'Escape') { event.preventDefault(); modalDiscardAndGo(); } return; }
+  const tag = document.activeElement && document.activeElement.tagName;
+  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA' || event.metaKey || event.ctrlKey || event.altKey) return;
+  if (event.key === 'ArrowRight') { event.preventDefault(); requestMove(1); }
+  if (event.key === 'ArrowLeft') { event.preventDefault(); requestMove(-1); }
+});
+window.addEventListener('beforeunload', e => {
+  if (closeExportWarned) return;
+  if (dirty || !exportedSinceChanges) { closeExportWarned = true; e.preventDefault(); e.returnValue = 'Please export your CSV before closing so your changes are saved.'; return e.returnValue; }
+});
+
+loadSaved();
+exportedSinceChanges = !hasChangesFromSource();
+updateFilePill();
+populateFilters();
+applyFilters();
+</script>
+</body>
+</html>

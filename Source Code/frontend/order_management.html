@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order & Inventory Management</title>
+    <style>
+        :root {
+            --primary: #FF6600;
+            --primary-dark: #CC5500;
+            --secondary: #FFFFFF;
+            --dark: #222222;
+            --gray: #f5f5f5;
+            --border: #e0e0e0;
+            --success: #4CAF50;
+            --warning: #FFC107;
+            --danger: #F44336;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, sans-serif; background: var(--gray); color: var(--dark); }
+
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: var(--secondary);
+            padding: 30px 20px;
+            margin-bottom: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header h1 { font-size: 28px; margin-bottom: 5px; }
+
+        .tabs-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid var(--border);
+            flex-wrap: wrap;
+        }
+
+        .tab-button {
+            padding: 12px 24px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 16px;
+            color: var(--dark);
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .tab-button:hover { color: var(--primary); }
+        .tab-button.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 500; }
+        .input-field {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+
+        @media (max-width: 768px) {
+            .grid-2, .grid-3 { grid-template-columns: 1fr; }
+        }
+
+        .button-group { display: flex; gap: 10px; margin-top: 20px; }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: var(--secondary);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 102, 0, 0.3);
+        }
+
+        .btn-success { background: var(--success); color: var(--secondary); }
+        .btn-success:hover { opacity: 0.9; }
+
+        .btn-danger { background: var(--danger); color: var(--secondary); }
+        .btn-danger:hover { opacity: 0.9; }
+
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .table-container {
+            background: var(--secondary);
+            border-radius: 8px;
+            overflow-x: auto;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-top: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        th {
+            background: var(--gray);
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid var(--border);
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        tr:hover { background: #fafafa; }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-new { background: #E3F2FD; color: #1565C0; }
+        .status-confirmed { background: #FFF3E0; color: #E65100; }
+        .status-reserved { background: #F3E5F5; color: #6A1B9A; }
+        .status-picking { background: #FFF8E1; color: #F57F17; }
+        .status-packing { background: #F1F8E9; color: #558B2F; }
+        .status-dispatched { background: #E0F2F1; color: #00695C; }
+        .status-delivered { background: #E8F5E9; color: #2E7D32; }
+        .status-cancelled { background: #FFEBEE; color: #C62828; }
+
+        .message {
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .message.show { display: block; }
+        .message.success { background: #E8F5E9; color: #2E7D32; border: 1px solid #4CAF50; }
+        .message.error { background: #FFEBEE; color: #C62828; border: 1px solid #F44336; }
+        .message.info { background: #E3F2FD; color: #1565C0; border: 1px solid #2196F3; }
+
+        .section-title { font-size: 18px; font-weight: 600; margin-bottom: 15px; color: var(--primary); padding-bottom: 10px; border-bottom: 2px solid var(--border); }
+
+        .card {
+            background: var(--secondary);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px; }
+
+        .stat-card {
+            background: var(--secondary);
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            border-left: 4px solid var(--primary);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .stat-card .number { font-size: 24px; font-weight: bold; color: var(--primary); margin: 10px 0; }
+        .stat-card .label { font-size: 12px; color: #666; text-transform: uppercase; }
+
+        .item-table { margin-top: 15px; }
+        .item-row { display: grid; grid-template-columns: auto 1fr 100px 100px 100px; gap: 10px; padding: 10px; border: 1px solid var(--border); margin-bottom: 5px; align-items: center; }
+
+        .badge-sku { background: #E0E0E0; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Order & Inventory Management</h1>
+            <p>Complete order processing and SKU-based inventory system</p>
+        </div>
+
+        <div class="tabs-container">
+            <button class="tab-button active" data-tab="dashboard">Dashboard</button>
+            <button class="tab-button" data-tab="orders">Orders</button>
+            <button class="tab-button" data-tab="inventory">Inventory</button>
+            <button class="tab-button" data-tab="create-order">New Order</button>
+        </div>
+
+        <!-- DASHBOARD TAB -->
+        <div id="dashboard" class="tab-content active">
+            <div class="section-title">Order Dashboard</div>
+            <div class="stat-grid" id="dashboardStats"></div>
+
+            <div class="grid-2">
+                <div class="card">
+                    <h3 style="margin-bottom: 15px; color: var(--primary);">Order Status Distribution</h3>
+                    <div id="statusChart"></div>
+                </div>
+                <div class="card">
+                    <h3 style="margin-bottom: 15px; color: var(--primary);">Recent Orders</h3>
+                    <div id="recentOrders"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ORDERS TAB -->
+        <div id="orders" class="tab-content">
+            <div class="section-title">Orders Management</div>
+
+            <div class="card">
+                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <input type="text" id="searchOrder" class="input-field" style="flex: 1;" placeholder="Search by order number, customer, SKU...">
+                    <button class="btn btn-primary" onclick="searchOrders()">Search</button>
+                    <button class="btn btn-primary" onclick="loadOrders()">Refresh</button>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Order #</th>
+                            <th>Customer</th>
+                            <th>Marketplace</th>
+                            <th>Total</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ordersTable"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- INVENTORY TAB -->
+        <div id="inventory" class="tab-content">
+            <div class="section-title">Inventory Management</div>
+
+            <div class="grid-2" style="margin-bottom: 20px;">
+                <div class="card">
+                    <h4>Search SKU</h4>
+                    <div class="form-group">
+                        <input type="text" id="skuSearch" class="input-field" placeholder="SKU code or barcode">
+                        <button class="btn btn-primary" style="margin-top: 10px; width: 100%;" onclick="searchSKU()">Search</button>
+                    </div>
+                </div>
+                <div class="card">
+                    <h4>Low Stock Alert</h4>
+                    <div id="lowStockAlert"></div>
+                </div>
+            </div>
+
+            <div class="card" id="skuDetails" style="display: none;">
+                <h3 id="skuName"></h3>
+                <div class="grid-3">
+                    <div>
+                        <div class="label">Physical Stock</div>
+                        <div id="skuPhysical" class="number" style="font-size: 24px; color: var(--primary);"></div>
+                    </div>
+                    <div>
+                        <div class="label">Reserved</div>
+                        <div id="skuReserved" class="number" style="font-size: 24px; color: var(--warning);"></div>
+                    </div>
+                    <div>
+                        <div class="label">Available</div>
+                        <div id="skuAvailable" class="number" style="font-size: 24px; color: var(--success);"></div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 20px;">
+                    <h4>Adjust Stock</h4>
+                    <div class="grid-2">
+                        <input type="number" id="adjustQty" class="input-field" placeholder="Quantity" min="1">
+                        <select id="adjustAction" class="input-field">
+                            <option value="add">Add Stock</option>
+                            <option value="deduct">Deduct Stock</option>
+                            <option value="damage">Mark Damaged</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <input type="text" id="adjustReason" class="input-field" placeholder="Reason for adjustment">
+                    </div>
+                    <button class="btn btn-primary" onclick="adjustStock()">Apply Adjustment</button>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>SKU</th>
+                            <th>Product</th>
+                            <th>Physical</th>
+                            <th>Reserved</th>
+                            <th>Available</th>
+                            <th>Warehouse</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventoryTable"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- CREATE ORDER TAB -->
+        <div id="create-order" class="tab-content">
+            <div class="section-title">Create New Order</div>
+
+            <div class="card">
+                <h3>Order Information</h3>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>Order Number *</label>
+                        <input type="text" id="orderNumber" class="input-field" placeholder="e.g., ORD-001">
+                    </div>
+                    <div class="form-group">
+                        <label>Marketplace</label>
+                        <select id="marketplace" class="input-field">
+                            <option value="Direct">Direct</option>
+                            <option value="Shopify">Shopify</option>
+                            <option value="Amazon">Amazon</option>
+                            <option value="TikTok">TikTok Shop</option>
+                            <option value="Walmart">Walmart</option>
+                        </select>
+                    </div>
+                </div>
+
+                <h3 style="margin-top: 20px;">Customer Information</h3>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>Customer Name *</label>
+                        <input type="text" id="customerName" class="input-field">
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="customerEmail" class="input-field">
+                    </div>
+                </div>
+
+                <h3 style="margin-top: 20px;">Items</h3>
+                <div id="orderItems"></div>
+                <button class="btn btn-primary" onclick="addOrderItem()" style="margin-top: 10px;">+ Add Item</button>
+
+                <h3 style="margin-top: 20px;">Totals</h3>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>Subtotal</label>
+                        <input type="number" id="subtotal" class="input-field" value="0" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label>Shipping</label>
+                        <input type="number" id="shipping" class="input-field" value="0" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label>Tax</label>
+                        <input type="number" id="tax" class="input-field" value="0" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label>Discount</label>
+                        <input type="number" id="discount" class="input-field" value="0" step="0.01">
+                    </div>
+                </div>
+
+                <div class="message" id="orderMessage"></div>
+
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="createNewOrder()">Create Order</button>
+                    <button class="btn" style="background: #ddd; color: var(--dark);" onclick="clearOrderForm()">Clear</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Tab switching
+        document.querySelectorAll('.tab-button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tabName = btn.getAttribute('data-tab');
+                document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+                document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+                document.getElementById(tabName).classList.add('active');
+                btn.classList.add('active');
+
+                if (tabName === 'dashboard') loadDashboard();
+                else if (tabName === 'orders') loadOrders();
+                else if (tabName === 'inventory') loadInventory();
+            });
+        });
+
+        let orderItemCount = 0;
+
+        function addOrderItem() {
+            orderItemCount++;
+            const itemHtml = `
+                <div class="item-row" id="item-${orderItemCount}">
+                    <input type="text" class="input-field" placeholder="SKU" style="width: 100px;">
+                    <input type="text" class="input-field" placeholder="Product Name">
+                    <input type="number" class="input-field" placeholder="Qty" min="1" value="1" style="width: 80px;">
+                    <input type="number" class="input-field" placeholder="Price" step="0.01" value="0" style="width: 100px;">
+                    <button class="btn btn-danger" style="width: 100%;" onclick="removeOrderItem(${orderItemCount})">Remove</button>
+                </div>
+            `;
+            document.getElementById('orderItems').insertAdjacentHTML('beforeend', itemHtml);
+        }
+
+        function removeOrderItem(itemId) {
+            const elem = document.getElementById(`item-${itemId}`);
+            if (elem) elem.remove();
+        }
+
+        function createNewOrder() {
+            const items = [];
+            document.querySelectorAll('#orderItems .item-row').forEach(row => {
+                const inputs = row.querySelectorAll('input');
+                if (inputs[0].value && inputs[2].value) {
+                    items.push({
+                        sku_code: inputs[0].value,
+                        product_name: inputs[1].value,
+                        quantity: parseInt(inputs[2].value),
+                        unit_price: parseFloat(inputs[3].value)
+                    });
+                }
+            });
+
+            if (!document.getElementById('orderNumber').value || !document.getElementById('customerName').value || items.length === 0) {
+                showMessage('orderMessage', 'Please fill all required fields', 'error');
+                return;
+            }
+
+            const orderData = {
+                order_number: document.getElementById('orderNumber').value,
+                marketplace: document.getElementById('marketplace').value,
+                customer_name: document.getElementById('customerName').value,
+                customer_email: document.getElementById('customerEmail').value,
+                warehouse_id: 1,
+                items: items,
+                subtotal: parseFloat(document.getElementById('subtotal').value),
+                shipping_cost: parseFloat(document.getElementById('shipping').value),
+                tax: parseFloat(document.getElementById('tax').value),
+                discount: parseFloat(document.getElementById('discount').value)
+            };
+
+            fetch('/api/orders/orders', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(orderData)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showMessage('orderMessage', `Order ${data.order_number} created successfully!`, 'success');
+                    clearOrderForm();
+                } else {
+                    showMessage('orderMessage', data.error || 'Failed to create order', 'error');
+                }
+            })
+            .catch(err => showMessage('orderMessage', err.message, 'error'));
+        }
+
+        function clearOrderForm() {
+            document.getElementById('orderNumber').value = '';
+            document.getElementById('customerName').value = '';
+            document.getElementById('customerEmail').value = '';
+            document.getElementById('orderItems').innerHTML = '';
+            document.getElementById('subtotal').value = '0';
+            document.getElementById('shipping').value = '0';
+            document.getElementById('tax').value = '0';
+            document.getElementById('discount').value = '0';
+            document.getElementById('orderMessage').classList.remove('show');
+        }
+
+        function loadDashboard() {
+            fetch('/api/orders/dashboard/stats')
+                .then(res => res.json())
+                .then(data => {
+                    const html = `
+                        <div class="stat-card">
+                            <div class="label">Total Orders</div>
+                            <div class="number">${data.total_orders}</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="label">Pending</div>
+                            <div class="number">${data.pending}</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="label">Picking</div>
+                            <div class="number">${data.picking}</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="label">Packing</div>
+                            <div class="number">${data.packing}</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="label">Ready</div>
+                            <div class="number">${data.ready_dispatch}</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="label">Delivered</div>
+                            <div class="number">${data.delivered}</div>
+                        </div>
+                    `;
+                    document.getElementById('dashboardStats').innerHTML = html;
+                });
+        }
+
+        function loadOrders() {
+            fetch('/api/orders/orders/search', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({})
+            })
+            .then(res => res.json())
+            .then(orders => {
+                let html = '';
+                orders.forEach(order => {
+                    html += `
+                        <tr>
+                            <td><strong>${order.order_number}</strong></td>
+                            <td>${order.customer_name}</td>
+                            <td>${order.marketplace}</td>
+                            <td>$${order.total.toFixed(2)}</td>
+                            <td><span class="status-badge status-${order.order_status.toLowerCase().replace(' ', '-')}">${order.order_status}</span></td>
+                            <td>${new Date(order.created_at).toLocaleDateString()}</td>
+                            <td><button class="btn" style="padding: 6px 12px; font-size: 12px;" onclick="viewOrder(${order.id})">View</button></td>
+                        </tr>
+                    `;
+                });
+                document.getElementById('ordersTable').innerHTML = html;
+            });
+        }
+
+        function loadInventory() {
+            fetch('/api/orders/skus')
+                .then(res => res.json())
+                .then(skus => {
+                    let html = '';
+                    skus.slice(0, 50).forEach(sku => {
+                        html += `
+                            <tr onclick="selectSKU('${sku.sku}')">
+                                <td><span class="badge-sku">${sku.sku}</span></td>
+                                <td>${sku.product_name}</td>
+                                <td>0</td>
+                                <td>0</td>
+                                <td>0</td>
+                                <td>Main</td>
+                            </tr>
+                        `;
+                    });
+                    document.getElementById('inventoryTable').innerHTML = html;
+                });
+        }
+
+        function searchSKU() {
+            const sku = document.getElementById('skuSearch').value;
+            if (!sku) return;
+
+            fetch(`/api/orders/inventory/${sku}`)
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('skuName').innerText = `${data.sku} - ${data.product_name}`;
+                    document.getElementById('skuPhysical').innerText = data.physical_stock;
+                    document.getElementById('skuReserved').innerText = data.reserved_stock;
+                    document.getElementById('skuAvailable').innerText = data.available_stock;
+                    document.getElementById('skuDetails').style.display = 'block';
+                })
+                .catch(() => alert('SKU not found'));
+        }
+
+        function selectSKU(skuCode) {
+            document.getElementById('skuSearch').value = skuCode;
+            searchSKU();
+        }
+
+        function adjustStock() {
+            alert('Inventory adjustment feature - Phase 2');
+        }
+
+        function loadOrders() {
+            // Called on tab init
+        }
+
+        function searchOrders() {
+            const searchTerm = document.getElementById('searchOrder').value;
+            if (!searchTerm) {
+                loadOrders();
+                return;
+            }
+            fetch('/api/orders/orders/search', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ order_number: searchTerm })
+            })
+            .then(res => res.json())
+            .then(orders => {
+                // Render orders...
+                loadOrders();
+            });
+        }
+
+        function viewOrder(orderId) {
+            alert(`View order ${orderId} - Phase 2`);
+        }
+
+        function showMessage(elementId, text, type) {
+            const elem = document.getElementById(elementId);
+            elem.innerText = text;
+            elem.className = `message show ${type}`;
+            setTimeout(() => elem.classList.remove('show'), 5000);
+        }
+
+        // Initial load
+        loadDashboard();
+        addOrderItem();
+    </script>
+</body>
+</html>

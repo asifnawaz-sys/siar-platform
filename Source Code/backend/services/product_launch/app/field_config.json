@@ -1,0 +1,127 @@
+{
+  "version": 2,
+  "product_label": "Product",
+  "item_label": "Item-set",
+  "title_field": "title",
+  "min_items": 1,
+  "table_columns": ["title", "product_type"],
+  "shopify": {
+    "title_field": "title",
+    "body_field": "description",
+    "vendor_field": "collection",
+    "type_field": "product_type",
+    "images_field": "images",
+    "tags_fields": [],
+    "sku_field": "sku",
+    "price_field": "price",
+    "compare_at_field": "compare_at_price",
+    "append_option_to_sku": true,
+    "weight_unit": "g",
+    "published": true,
+    "status": "draft",
+    "options": [
+      { "name": "Item",   "field": "item",   "level": "item" },
+      { "name": "Fabric", "field": "fabric", "level": "item", "join": " / " },
+      { "name": "Size",   "field": "sizes",  "level": "item", "explode": true }
+    ],
+    "metafield_namespace": "custom",
+    "metafield_header": "{name} (product.metafields.{namespace}.{key})",
+    "metafields": [
+      { "field": "color",       "name": "Color",             "key": "color",       "type": "single_line_text_field" },
+      { "field": "length",      "name": "Product length",    "key": "length",      "type": "single_line_text_field" },
+      { "field": "care",        "name": "Care instructions", "key": "care",         "type": "single_line_text_field" },
+      { "field": "category",    "name": "Category",          "key": "category",     "type": "single_line_text_field" },
+      { "field": "subcategory", "name": "Subcategory",       "key": "subcategory",  "type": "single_line_text_field" },
+      { "field": "brand",       "name": "Brand",             "key": "brand",        "type": "single_line_text_field" }
+    ]
+  },
+  "groups": [
+    { "id": "basics", "label": "Basics" },
+    { "id": "classification", "label": "Classification" },
+    { "id": "details", "label": "Details" },
+    { "id": "media", "label": "Media" }
+  ],
+  "product_fields": [
+    {
+      "key": "title", "label": "Product Title", "type": "text",
+      "group": "basics", "required": true,
+      "placeholder": "e.g. Biscuit Fold",
+      "help": "The display name of the product."
+    },
+    {
+      "key": "product_type", "label": "Product Type", "type": "select",
+      "group": "basics", "required": true,
+      "options": ["Luxury Pret", "Casual Pret", "Formals", "Fusion Wear", "Western Wear", "Bridal"]
+    },
+    {
+      "key": "brand", "label": "Brand", "type": "text",
+      "group": "classification"
+    },
+    {
+      "key": "category", "label": "Category", "type": "text",
+      "group": "classification", "placeholder": "e.g. Womenswear"
+    },
+    {
+      "key": "subcategory", "label": "Subcategory", "type": "text",
+      "group": "classification", "placeholder": "e.g. 3-Piece Suit"
+    },
+    {
+      "key": "collection", "label": "Collection Name", "type": "text",
+      "group": "classification", "placeholder": "e.g. Nuance Edit IV"
+    },
+    {
+      "key": "description", "label": "Description", "type": "textarea",
+      "group": "details", "required": true,
+      "placeholder": "Full product / marketing description."
+    },
+    {
+      "key": "color", "label": "Color", "type": "text",
+      "group": "details", "placeholder": "e.g. Warm Biscuit Beige"
+    },
+    {
+      "key": "length", "label": "Product Length", "type": "text",
+      "group": "details", "placeholder": "e.g. 28 in (top) / 42 in (bottom)"
+    },
+    {
+      "key": "care", "label": "Care Instructions", "type": "text",
+      "group": "details", "placeholder": "e.g. Dry Clean Only"
+    },
+    {
+      "key": "images", "label": "Product Images", "type": "tags",
+      "subtype": "url", "group": "media",
+      "help": "Paste an image URL and press Enter. Add as many as you like."
+    }
+  ],
+  "item_fields": [
+    {
+      "key": "item", "label": "Item", "type": "text",
+      "required": true,
+      "placeholder": "e.g. Shirt/Pants/Dupatta",
+      "help": "The pieces included in this option."
+    },
+    {
+      "key": "sku", "label": "SKU", "type": "text",
+      "required": true, "unique": true,
+      "placeholder": "e.g. BISCUITFOLD-FW-3PC",
+      "help": "Unique code for this item-set. Must not repeat anywhere in this launch."
+    },
+    {
+      "key": "fabric", "label": "Fabric", "type": "tags",
+      "help": "Add one fabric per piece (press Enter after each)."
+    },
+    {
+      "key": "price", "label": "Price", "type": "number",
+      "required": true, "min": 0, "prefix": "PKR", "placeholder": "32000"
+    },
+    {
+      "key": "compare_at_price", "label": "Compare-at Price", "type": "number",
+      "min": 0, "prefix": "PKR",
+      "help": "Optional original / strike-through price."
+    },
+    {
+      "key": "sizes", "label": "Available Sizes", "type": "multiselect",
+      "required": true,
+      "options": ["XS", "S", "M", "L", "XL", "XXL", "Custom"]
+    }
+  ]
+}

@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SIAR Digital Platform</title>
+<style>
+:root{--bg:#0b0d10;--panel:#141820;--panel2:#1a2029;--text:#eef2f7;--muted:#9aa6b2;--accent:#d4a83d;--ok:#42d392;--danger:#ff6b6b;--border:#2a313b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif}
+header{height:72px;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;background:#101318;position:sticky;top:0;z-index:10}
+.logo{font-size:20px;font-weight:800}.logo span{color:var(--accent)}.status{margin-left:auto;color:var(--muted);font-size:13px}
+.layout{display:flex;min-height:calc(100vh - 72px)}nav{width:235px;border-right:1px solid var(--border);padding:18px 12px;background:#0f1217}
+nav button{width:100%;border:0;background:transparent;color:var(--muted);text-align:left;padding:12px;border-radius:8px;cursor:pointer;margin-bottom:4px}
+nav button:hover,nav button.active{background:var(--panel2);color:var(--text)}
+main{flex:1;padding:28px;max-width:1400px}.view{display:none}.view.active{display:block}
+h1{margin:0 0 8px;font-size:28px}h2{font-size:18px;margin-top:0}.sub{color:var(--muted);margin-bottom:24px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px}.card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:18px}
+.kpi{font-size:28px;font-weight:800}.muted{color:var(--muted);font-size:13px}
+input,textarea,select{width:100%;background:#0e1116;border:1px solid var(--border);border-radius:8px;padding:11px;color:var(--text);margin:6px 0 12px}
+button.primary{background:var(--accent);color:#17130a;border:0;padding:11px 16px;border-radius:8px;font-weight:800;cursor:pointer}
+button.secondary{background:var(--panel2);color:var(--text);border:1px solid var(--border);padding:10px 14px;border-radius:8px;cursor:pointer}
+pre{white-space:pre-wrap;background:#080a0d;padding:14px;border-radius:8px;max-height:420px;overflow:auto}
+table{width:100%;border-collapse:collapse;margin-top:14px}th,td{padding:9px;border-bottom:1px solid var(--border);text-align:left;font-size:13px}th{color:var(--muted)}
+.badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#202630;color:var(--muted);font-size:12px}.ok{color:var(--ok)}.danger{color:var(--danger)}
+.actions{display:flex;gap:8px;flex-wrap:wrap}.hidden{display:none}
+@media(max-width:800px){nav{width:180px}main{padding:18px}}
+</style>
+</head>
+<body>
+<header><div class="logo"><span>SIAR</span> DIGITAL PLATFORM</div><div class="status" id="health">Checking backend…</div></header>
+<div class="layout">
+<nav>
+<button class="active" data-view="dashboard">Dashboard</button>
+<button data-view="scraper">Product Scraper</button>
+<button data-view="media">Media Downloader</button>
+<button data-view="image">Image Resizer</button>
+<button data-view="video">Video Processor</button>
+<button data-view="qa">Product QA</button>
+<button data-view="recon">Reconciliation</button>
+<button data-view="colors">Color Detection</button>
+<button data-view="products">Product Manager</button>
+<button data-view="shopify">Shopify Tools</button>
+<button data-view="apps">Applications</button>
+<button data-view="settings">Settings</button>
+</nav>
+<main>
+<section id="dashboard" class="view active">
+<h1>Dashboard</h1><div class="sub">Production-oriented local operations platform.</div>
+<div class="grid">
+<div class="card"><div class="muted">Backend</div><div class="kpi ok">ONLINE</div></div>
+<div class="card"><div class="muted">Frontend</div><div class="kpi">HTML</div></div>
+<div class="card"><div class="muted">Export</div><div class="kpi">Shopify</div></div>
+<div class="card"><div class="muted">Data Safety</div><div class="kpi">Strict</div></div>
+</div>
+<div class="card" style="margin-top:16px"><h2>Production safeguards</h2>
+<ul><li>No invented inventory quantities</li><li>Single-source SKU generation</li><li>Weight normalized to grams</li><li>No arbitrary variant-image assignment</li><li>Key-based reconciliation</li><li>Optional AI is not required</li></ul></div>
+</section>
+
+<section id="scraper" class="view">
+<h1>Product Scraper</h1><div class="sub">Shopify-first extraction with safe generic fallback.</div>
+<div class="card"><label>Website URL</label><input id="url" placeholder="https://example.com">
+<label>Product limit</label><input id="limit" type="number" value="250" min="1" max="250">
+<div class="actions"><button class="primary" onclick="scrape()">Detect & Scrape</button><button class="secondary" onclick="exportShopify()">Export Shopify CSV</button><button class="secondary" onclick="runQA()">Run QA</button></div>
+<pre id="scrapeLog">No scrape run yet.</pre></div>
+</section>
+
+<section id="media" class="view">
+<h1>Media Downloader</h1><div class="sub">Download images/videos from URLs with deduplication.</div>
+<div class="card"><label>Media URLs — one per line</label><textarea id="mediaUrls" rows="10" placeholder="https://..."></textarea>
+<button class="primary" onclick="downloadMedia()">Download</button><pre id="mediaLog"></pre></div>
+</section>
+
+<section id="image" class="view">
+<h1>Image Resizer</h1><div class="sub">AI-powered batch image processing with smart cropping.</div>
+<div class="card">
+<h2>Single Image Resize</h2>
+<label>Select Image</label><input id="imageFile" type="file" accept="image/*">
+<label>Width (px)</label><input id="imgWidth" type="number" placeholder="Optional">
+<label>Height (px)</label><input id="imgHeight" type="number" placeholder="Optional">
+<label>Mode</label><select id="imgMode"><option value="fill">Fill (Center Crop)</option><option value="fit">Fit (Letterbox)</option><option value="stretch">Stretch</option><option value="smart">Smart (AI)</option></select>
+<label>Quality (1-100)</label><input id="imgQuality" type="number" value="85" min="1" max="100">
+<div class="actions"><button class="primary" onclick="resizeSingleImage()">Resize</button></div>
+<pre id="imageLog"></pre>
+</div>
+
+<div class="card" style="margin-top:16px">
+<h2>Batch Processing</h2>
+<label>Select Multiple Images (Shift+Click)</label><input id="imageFiles" type="file" accept="image/*" multiple>
+<label>Width (px)</label><input id="batchWidth" type="number" placeholder="Optional">
+<label>Height (px)</label><input id="batchHeight" type="number" placeholder="Optional">
+<label>Mode</label><select id="batchMode"><option value="fill">Fill (Center Crop)</option><option value="fit">Fit (Letterbox)</option><option value="stretch">Stretch</option><option value="smart">Smart (AI)</option></select>
+<label>Quality (1-100)</label><input id="batchQuality" type="number" value="85" min="1" max="100">
+<div class="actions"><button class="primary" onclick="resizeBatchImages()">Process Batch</button></div>
+<pre id="batchLog"></pre>
+</div>
+
+<div class="card" style="margin-top:16px">
+<h2>Format Conversion</h2>
+<label>Select Image</label><input id="convertFile" type="file" accept="image/*">
+<label>Output Format</label><select id="convertFormat"><option value="JPEG">JPEG</option><option value="PNG">PNG</option><option value="WEBP">WebP</option><option value="BMP">BMP</option><option value="GIF">GIF</option></select>
+<label>Quality (1-100)</label><input id="convertQuality" type="number" value="85" min="1" max="100">
+<div class="actions"><button class="primary" onclick="convertImage()">Convert</button></div>
+<pre id="convertLog"></pre>
+</div>
+</section>
+
+<section id="video" class="view">
+<h1>Video Processor</h1><div class="sub">Convert, compress, and optimize videos with FFmpeg.</div>
+<div class="card">
+<h2>Video Conversion</h2>
+<label>Select Video</label><input id="videoFile" type="file" accept="video/*">
+<label>Quality Preset</label><select id="videoPreset"><option value="low">Low (480p, 500kbps)</option><option value="medium" selected>Medium (720p, 1.5mbps)</option><option value="high">High (1080p, 5mbps)</option><option value="ultra">Ultra (2160p, 10mbps)</option><option value="webm_low">WebM Low (480p)</option><option value="webm_medium">WebM Medium (720p)</option><option value="webm_high">WebM High (1080p)</option></select>
+<label>Audio Codec</label><select id="audioCodec"><option value="aac" selected>AAC (best compatibility)</option><option value="libmp3lame">MP3 (smaller)</option><option value="libopus">Opus (high quality)</option></select>
+<div class="actions"><button class="primary" onclick="convertVideo()">Convert Video</button></div>
+<pre id="videoLog"></pre>
+</div>
+
+<div class="card" style="margin-top:16px">
+<h2>Batch Video Conversion</h2>
+<label>Select Multiple Videos (Shift+Click)</label><input id="videoFiles" type="file" accept="video/*" multiple>
+<label>Quality Preset</label><select id="batchVideoPreset"><option value="low">Low (480p, 500kbps)</option><option value="medium" selected>Medium (720p, 1.5mbps)</option><option value="high">High (1080p, 5mbps)</option><option value="webm_medium">WebM Medium (720p)</option></select>
+<label>Audio Codec</label><select id="batchAudioCodec"><option value="aac" selected>AAC</option><option value="libmp3lame">MP3</option><option value="libopus">Opus</option></select>
+<div class="actions"><button class="primary" onclick="convertVideoBatch()">Process Batch</button></div>
+<pre id="batchVideoLog"></pre>
+</div>
+
+<div class="card" style="margin-top:16px">
+<h2>Video Information</h2>
+<label>Select Video</label><input id="infoVideoFile" type="file" accept="video/*">
+<div class="actions"><button class="primary" onclick="getVideoInfo()">Get Info</button></div>
+<pre id="videoInfoLog"></pre>
+</div>
+
+<div class="card" style="margin-top:16px">
+<h2>Extract Frames</h2>
+<label>Select Video</label><input id="frameVideoFile" type="file" accept="video/*">
+<label>Interval (seconds)</label><input id="frameInterval" type="number" value="1" min="0.1" max="60">
+<div class="actions"><button class="primary" onclick="extractFrames()">Extract Frames</button></div>
+<pre id="frameLog"></pre>
+</div>
+</section>
+
+<section id="qa" class="view">
+<h1>Product QA</h1><div class="sub">Validate scraped products before export.</div>
+<div class="card"><div id="qaSummary">Run QA from the scraper after loading products.</div></div>
+</section>
+
+<section id="recon" class="view">
+<h1>Reconciliation</h1><div class="sub">Match using SKU, Handle, Variant SKU or Barcode — never row position.</div>
+<div class="card"><label>Reference file</label><input id="refFile" type="file">
+<label>Shopify/current CSV</label><input id="curFile" type="file">
+<button class="primary" onclick="reconcileFiles()">Run Reconciliation</button><pre id="reconLog"></pre></div>
+</section>
+
+<section id="colors" class="view">
+<h1>Color Detection</h1><div class="sub">Analyze product image colors automatically.</div>
+<div class="card"><label>Image URLs (one per line)</label><textarea id="colorUrls" placeholder="https://example.com/image1.jpg&#10;https://example.com/image2.jpg" rows="6"></textarea>
+<label>Colors to detect</label><select id="numColors"><option value="5">5 colors</option><option value="10">10 colors</option></select>
+<button class="primary" onclick="detectColors()">Analyze Colors</button><pre id="colorLog"></pre></div>
+</section>
+
+<section id="products" class="view">
+<h1>Product Manager</h1><div class="sub">Extract metadata and manage product data.</div>
+<div class="card"><label>Product JSON</label><textarea id="productJson" placeholder='[{"title":"Product 1","description":"Made from cotton fabric, 100% organic"}]' rows="6"></textarea>
+<button class="primary" onclick="extractMetadata()">Extract Metadata</button><pre id="metaLog"></pre></div>
+<div class="card"><label>Export Products with Images</label><textarea id="exportProducts" placeholder='[{"title":"Product","image":"https://..."}]' rows="4"></textarea>
+<button class="primary" onclick="exportWithImages()">Generate Excel</button><pre id="exportLog"></pre></div>
+</section>
+
+<section id="shopify" class="view">
+<h1>Shopify Tools</h1><div class="sub">Generate Shopify URLs and manage platform integration.</div>
+<div class="card"><label>Shop Domain</label><input id="shopDomain" value="myshop.myshopify.com" placeholder="myshop.myshopify.com">
+<label>Product Names (one per line)</label><textarea id="productNames" placeholder="Product Name 1&#10;Product Name 2" rows="4"></textarea>
+<button class="primary" onclick="generateShopifyUrls()">Generate URLs</button><pre id="shopifyLog"></pre></div>
+<div class="card"><label>Product Handle</label><input id="variantHandle" placeholder="product-name">
+<label>Variants (one per line)</label><textarea id="variants" placeholder="Red&#10;Blue&#10;Green" rows="4"></textarea>
+<button class="primary" onclick="generateVariantUrls()">Generate Variant URLs</button><pre id="variantLog"></pre></div>
+</section>
+
+<section id="apps" class="view">
+<h1>Applications</h1><div class="sub">Launch standalone tools and utilities integrated with this platform.</div>
+<div class="card"><button class="primary" onclick="listApps()">Refresh App List</button><pre id="appListLog"></pre></div>
+<div class="grid" id="appGrid"></div>
+</section>
+
+<section id="settings" class="view">
+<h1>Settings</h1><div class="sub">Portable local application settings.</div>
+<div class="card"><p><b>Application:</b> SIAR Digital Platform</p><p><b>Server:</b> 127.0.0.1:8765</p><p><b>AI:</b> Optional / disabled by default</p><p><b>Inventory fallback:</b> Never invent quantities</p><p><b>Variant limit:</b> No silent truncation</p></div>
+</section>
+</main></div>
+<script>
+let products=[];
+const $=id=>document.getElementById(id);
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{
+ document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));
+ document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));
+ b.classList.add("active"); $(b.dataset.view).classList.add("active");
+});
+async function health(){
+ try{let r=await fetch("/api/health");let j=await r.json();$("health").textContent="● "+j.status.toUpperCase()+" · Python backend";$("health").className="status ok";}
+ catch(e){$("health").textContent="● Backend unavailable";$("health").className="status danger";}
+}
+async function scrape(){
+ $("scrapeLog").textContent="Scraping…";
+ try{
+  let r=await fetch("/api/scrape",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({url:$("url").value,limit:Number($("limit").value)})});
+  let j=await r.json(); if(!r.ok) throw new Error(j.error);
+  products=j.products||[];
+  $("scrapeLog").textContent=JSON.stringify({detected:j.detected,count:j.count,sample:products.slice(0,3)},null,2);
+ }catch(e){$("scrapeLog").textContent="ERROR: "+e.message;}
+}
+async function exportShopify(){
+ if(!products.length){alert("Run a scrape first.");return}
+ let r=await fetch("/api/export/shopify",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({products})});
+ let j=await r.json(); if(!r.ok){alert(j.error);return}
+ window.location=j.download;
+}
+async function runQA(){
+ if(!products.length){alert("Run a scrape first.");return}
+ let r=await fetch("/api/qa",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({products})});
+ let j=await r.json();$("qaSummary").innerHTML=`<b>Total:</b> ${j.count} &nbsp; <span class="ok">PASS: ${j.pass}</span> &nbsp; REVIEW: ${j.review} &nbsp; <span class="danger">FAIL: ${j.fail}</span>`;
+}
+async function downloadMedia(){
+ let urls=$("mediaUrls").value.split(/\\r?\\n/).map(x=>x.trim()).filter(Boolean);
+ let r=await fetch("/api/media",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({urls})});
+ let j=await r.json();$("mediaLog").textContent=JSON.stringify(j,null,2);
+}
+async function reconcileFiles(){
+ let f1=$("refFile").files[0],f2=$("curFile").files[0]; if(!f1||!f2){alert("Select both files.");return}
+ let fd=new FormData();fd.append("reference",f1);fd.append("csv",f2);$("reconLog").textContent="Running…";
+ let r=await fetch("/api/reconcile",{method:"POST",body:fd});let j=await r.json();$("reconLog").textContent=JSON.stringify(j,null,2);
+}
+async function resizeSingleImage(){
+ let f=$("imageFile").files[0];if(!f){alert("Select an image.");return}
+ let w=Number($("imgWidth").value)||undefined,h=Number($("imgHeight").value)||undefined;
+ let fd=new FormData();fd.append("file",f);fd.append("width",w||"");fd.append("height",h||"");fd.append("mode",$("imgMode").value);fd.append("quality",$("imgQuality").value);
+ $("imageLog").textContent="Processing…";
+ try{
+  let r=await fetch("/api/image/resize",{method:"POST",body:fd});
+  let j=await r.json();if(!r.ok)throw new Error(j.error);
+  $("imageLog").textContent=JSON.stringify(j,null,2);if(j.download)window.location=j.download;
+ }catch(e){$("imageLog").textContent="ERROR: "+e.message;}
+}
+async function resizeBatchImages(){
+ let files=$("imageFiles").files;if(!files.length){alert("Select images.");return}
+ let w=Number($("batchWidth").value)||undefined,h=Number($("batchHeight").value)||undefined;
+ let fd=new FormData();
+ for(let f of files)fd.append("files",f);
+ fd.append("width",w||"");fd.append("height",h||"");fd.append("mode",$("batchMode").value);fd.append("quality",$("batchQuality").value);
+ $("batchLog").textContent="Processing "+files.length+" images…";
+ try{
+  let r=await fetch("/api/image/batch",{method:"POST",body:fd});
+  let j=await r.json();if(!r.ok)throw new Error(j.error);
+  $("batchLog").textContent=JSON.stringify({processed:j.details.processed,failed:j.details.failed,compression:j.details.compression_percent.toFixed(1)},null,2);if(j.download)window.location=j.download;
+ }catch(e){$("batchLog").textContent="ERROR: "+e.message;}
+}
+async function convertImage(){
+ let f=$("convertFile").files[0];if(!f){alert("Select an image.");return}
+ let fd=new FormData();fd.append("file",f);fd.append("format",$("convertFormat").value);fd.append("quality",$("convertQuality").value);
+ $("convertLog").textContent="Converting…";
+ try{
+  let r=await fetch("/api/image/convert",{method:"POST",body:fd});
+  let j=await r.json();if(!r.ok)throw new Error(j.error);
+  $("convertLog").textContent="Conversion successful!";if(j.download)window.location=j.download;
+ }catch(e){$("convertLog").textContent="ERROR: "+e.message;}
+}
+async function convertVideo(){
+ let f=$("videoFile").files[0];if(!f){alert("Select a video.");return}
+ let fd=new FormData();fd.append("file",f);fd.append("preset",$("videoPreset").value);fd.append("audio_codec",$("audioCodec").value);
+ $("videoLog").textContent="Converting video…";
+ try{
+  let r=await fetch("/api/video/convert",{method:"POST",body:fd});
+  let j=await r.json();if(!r.ok)throw new Error(j.error);
+  $("videoLog").textContent=JSON.stringify({preset:j.details.preset,original:j.details.original_size_mb.toFixed(2),converted:j.details.converted_size_mb.toFixed(2),compression:j.details.compression_percent.toFixed(1)},null,2);if(j.download)window.location=j.download;
+ }catch(e){$("videoLog").textContent="ERROR: "+e.message;}
+}
+async function convertVideoBatch(){
+ let files=$("videoFiles").files;if(!files.length){alert("Select videos.");return}
+ let fd=new FormData();
+ for(let f of files)fd.append("files",f);
+ fd.append("preset",$("batchVideoPreset").value);fd.append("audio_codec",$("batchAudioCodec").value);
+ $("batchVideoLog").textContent="Processing "+files.length+" videos…";
+ try{
+  let r=await fetch("/api/video/batch",{method:"POST",body:fd});
+  let j=await r.json();if(!r.ok)throw new Error(j.error);
+  $("batchVideoLog").textContent=JSON.stringify({total:j.details.total,converted:j.details.converted,failed:j.details.failed,compression:j.details.compression_percent.toFixed(1)},null,2);if(j.download)window.location=j.download;
+ }catch(e){$("batchVideoLog").textContent="ERROR: "+e.message;}
+}
+async function getVideoInfo(){
+ let f=$("infoVideoFile").files[0];if(!f){alert("Select a video.");return}
+ let fd=new FormData();fd.append("file",f);
+ $("videoInfoLog").textContent="Getting info…";
+ try{
+  let r=await fetch("/api/video/info",{method:"POST",body:fd});
+  let j=await r.json();if(j.error){$("videoInfoLog").textContent="ERROR: "+j.error;return}
+  let info={size:j.size_mb.toFixed(2)+"MB",duration:j.duration_str,filename:j.path.split("/").pop()};
+  $("videoInfoLog").textContent=JSON.stringify(info,null,2);
+ }catch(e){$("videoInfoLog").textContent="ERROR: "+e.message;}
+}
+async function extractFrames(){
+ let f=$("frameVideoFile").files[0];if(!f){alert("Select a video.");return}
+ let fd=new FormData();fd.append("file",f);fd.append("interval",$("frameInterval").value);
+ $("frameLog").textContent="Extracting frames…";
+ try{
+  let r=await fetch("/api/video/extract-frames",{method:"POST",body:fd});
+  let j=await r.json();if(!r.ok)throw new Error(j.error);
+  $("frameLog").textContent=JSON.stringify({frames_extracted:j.frames_count,interval:$("frameInterval").value+"s"},null,2);if(j.download)window.location=j.download;
+ }catch(e){$("frameLog").textContent="ERROR: "+e.message;}
+}
+async function detectColors(){
+ let urls=$("colorUrls").value.trim().split("\n").filter(u=>u.trim());
+ if(!urls.length){alert("Enter image URLs");return}
+ let payload={urls,num_colors:parseInt($("numColors").value)};
+ $("colorLog").textContent="Analyzing "+urls.length+" images…";
+ try{
+  let r=await fetch("/api/image/detect-colors",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+  let j=await r.json();if(!r.ok)throw new Error(j.error);
+  $("colorLog").textContent=JSON.stringify(j.results,null,2);
+ }catch(e){$("colorLog").textContent="ERROR: "+e.message;}
+}
+async function extractMetadata(){
+ let products=[];
+ try{products=JSON.parse($("productJson").value);}catch(e){alert("Invalid JSON");return}
+ $("metaLog").textContent="Extracting metadata…";
+ try{
+  let r=await fetch("/api/product/extract-metadata",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({products})});
+  let j=await r.json();if(!r.ok)throw new Error(j.error);
+  $("metaLog").textContent=JSON.stringify(j.results,null,2);
+ }catch(e){$("metaLog").textContent="ERROR: "+e.message;}
+}
+async function exportWithImages(){
+ let products=[];
+ try{products=JSON.parse($("exportProducts").value);}catch(e){alert("Invalid JSON");return}
+ $("exportLog").textContent="Generating Excel with images…";
+ try{
+  let r=await fetch("/api/image/export-with-images",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({products})});
+  let j=await r.json();if(!r.ok)throw new Error(j.error);
+  $("exportLog").textContent="✓ Excel generated!";if(j.download)window.location=j.download;
+ }catch(e){$("exportLog").textContent="ERROR: "+e.message;}
+}
+async function generateShopifyUrls(){
+ let names=$("productNames").value.trim().split("\n").filter(n=>n.trim());
+ if(!names.length){alert("Enter product names");return}
+ let items=names.map(n=>({name:n}));
+ let payload={items,shop_domain:$("shopDomain").value};
+ $("shopifyLog").textContent="Generating "+names.length+" URLs…";
+ try{
+  let r=await fetch("/api/shopify/generate-urls",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+  let j=await r.json();if(!r.ok)throw new Error(j.error);
+  let urls=j.results.map(r=>r.url).join("\n");$("shopifyLog").textContent=urls;
+ }catch(e){$("shopifyLog").textContent="ERROR: "+e.message;}
+}
+async function generateVariantUrls(){
+ let handle=$("variantHandle").value.trim();
+ let variants=$("variants").value.trim().split("\n").filter(v=>v.trim());
+ if(!handle||!variants.length){alert("Enter handle and variants");return}
+ $("variantLog").textContent="Generating variant URLs…";
+ try{
+  let r=await fetch("/api/shopify/generate-variants",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({handle,variants})});
+  let j=await r.json();if(!r.ok)throw new Error(j.error);
+  let urls=j.results.map(r=>r.url).join("\n");$("variantLog").textContent=urls;
+ }catch(e){$("variantLog").textContent="ERROR: "+e.message;}
+}
+async function listApps(){
+ $("appListLog").textContent="Loading apps…";
+ try{
+  let r=await fetch("/api/apps/list");
+  let j=await r.json();if(!r.ok)throw new Error(j.error);
+  $("appListLog").textContent=j.count+" applications available";
+  let grid=$("appGrid");grid.innerHTML="";
+  for(let app of j.apps){
+   let card=document.createElement("div");
+   card.className="card";
+   card.innerHTML=`<h3>${app.name}</h3><p style="color:var(--muted);font-size:13px">${app.description}</p><p><span class="badge">${app.type}</span> <span class="badge">${app.status}</span></p><button class="primary" onclick="launchApp('${app.id}')" style="width:100%;margin-top:8px">Launch</button>`;
+   grid.appendChild(card);
+  }
+ }catch(e){$("appListLog").textContent="ERROR: "+e.message;}
+}
+async function launchApp(appId){
+ try{
+  let r=await fetch("/api/apps/launch",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({app_id:appId})});
+  let j=await r.json();
+  alert(j.message||"✓ Application launched!");
+ }catch(e){alert("ERROR: "+e.message);}
+}
+health();
+</script>
+</body></html>

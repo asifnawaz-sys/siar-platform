@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% from "_brand.html" import siar_logo %}
+{% block title %}Review — {{ launch.brand_name or launch.token }}{% endblock %}
+{% block body_attrs %} data-admin-page="review"{% endblock %}
+{% block body %}
+<header class="appbar">
+  <div class="brand">
+    {{ siar_logo('siar-bar') }}
+    <span class="brand-div"></span>
+    <div>
+      <h1>{{ launch.brand_name or "Untitled brand" }}</h1>
+      <small>Launch review · Ref {{ launch.token }}</small>
+    </div>
+  </div>
+  <div class="bar-actions">
+    <span id="status-pill" class="status-pill status-{{ launch.status|replace(' ','-') }}">{{ launch.status }}</span>
+    <a class="btn btn-ghost on-dark" href="{{ url_for('admin.dashboard') }}">{{ icon('arrow-left') }} Dashboard</a>
+    <a class="btn btn-ghost on-dark" href="{{ url_for('admin.logout') }}">{{ icon('logout') }} Sign out</a>
+  </div>
+</header>
+
+<div class="container stack">
+
+  <!-- Meta -->
+  <div class="card">
+    <div class="card-head">
+      <h2>Launch summary</h2>
+      <div class="bar-actions">
+        <a class="btn" href="{{ url_for('admin.export_csv', token=launch.token) }}">{{ icon('download') }} Review CSV</a>
+        <a class="btn btn-primary" href="{{ url_for('admin.export_shopify_csv', token=launch.token) }}">{{ icon('download') }} Export Shopify CSV</a>
+      </div>
+    </div>
+    <div class="card-body stack">
+      <div class="meta-grid">
+        <div class="meta-item"><div class="k">Brand</div><div class="v">{{ launch.brand_name or "—" }}</div></div>
+        <div class="meta-item"><div class="k">Contact</div><div class="v">{{ launch.contact_name or "—" }}{% if launch.contact_email %}<div class="small muted" style="font-weight:400">{{ launch.contact_email }}</div>{% endif %}</div></div>
+        <div class="meta-item"><div class="k">Ref ID</div><div class="v"><code>{{ launch.token }}</code></div></div>
+        <div class="meta-item"><div class="k">Created</div><div class="v small">{{ launch.created_at.strftime('%d %b %Y, %H:%M') }}</div></div>
+        <div class="meta-item"><div class="k">Last updated</div><div class="v small" id="meta-updated">{{ launch.updated_at.strftime('%d %b %Y, %H:%M') }}</div></div>
+        <div class="meta-item"><div class="k">Products</div><div class="v"><span id="meta-product-count">{{ launch.products|length }}</span> <span class="small muted" style="font-weight:400">(<span id="meta-complete-count">…</span> complete)</span></div></div>
+        <div class="meta-item">
+          <div class="k">Status</div>
+          <select id="admin-status" style="margin-top:4px">
+            {% for s in statuses %}<option value="{{ s }}" {% if s==launch.status %}selected{% endif %}>{{ s }}</option>{% endfor %}
+          </select>
+        </div>
+      </div>
+      <div>
+        <div class="k small muted" style="text-transform:uppercase;letter-spacing:.05em;font-weight:600">Client link</div>
+        <div class="copybox" style="margin-top:7px;max-width:540px">
+          <input type="text" readonly value="{{ url_for('client.launch', token=launch.token, _external=True) }}">
+          <button class="btn" data-copy="{{ url_for('client.launch', token=launch.token, _external=True) }}">{{ icon('copy') }} Copy</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Products -->
+  <div class="card">
+    <div class="card-head">
+      <h2>Products</h2>
+      <div class="bar-actions">
+        <div class="progress-wrap" style="min-width:220px">
+          <div class="progress"><span id="progress-bar"></span></div>
+          <span id="progress-text" class="small muted" style="white-space:nowrap"></span>
+        </div>
+        <button id="add-product-btn" class="btn btn-primary">{{ icon('plus') }} Add Product</button>
+      </div>
+    </div>
+    <div style="padding:0">
+      <div class="table-wrap">
+        <table class="data responsive" id="products-table" style="display:none">
+          <thead><tr></tr></thead>
+          <tbody id="products-tbody"></tbody>
+        </table>
+      </div>
+      <div id="products-empty" class="empty">
+        <div class="art">{{ icon('box') }}</div>
+        <h3>No products submitted yet</h3>
+        <p class="small">The brand hasn't added any products to this launch.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="app-footer">Product Launch by {{ siar_logo('siar-sm siar-ink') }}<strong>Digital</strong></div>
+
+<!-- Product add/edit modal (shared board markup) -->
+<div class="modal-backdrop" id="product-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <h2 id="modal-title">Edit Product</h2>
+      <button class="x-close" data-close-modal title="Close">{{ icon('close') }}</button>
+    </div>
+    <div class="modal-body"><div id="product-form"></div></div>
+    <div class="modal-foot">
+      <button id="delete-product-btn" class="btn btn-danger" style="display:none">{{ icon('trash') }} Delete</button>
+      <div class="spacer"></div>
+      <button class="btn" data-close-modal>Cancel</button>
+      <button id="save-product-btn" class="btn btn-primary">{{ icon('save') }} Save Product</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>window.LAUNCH_TOKEN = {{ launch.token|tojson }};</script>
+<script src="{{ url_for('static', filename='js/board.js') }}"></script>
+<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+{% endblock %}

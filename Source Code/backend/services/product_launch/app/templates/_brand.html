@@ -1,0 +1,25 @@
+{# SIAR wordmark as inline SVG. Letters use currentColor (so they adapt to
+   light pages and the dark header); the "A" is a fixed orange triangle.
+   Usage: {% from "_brand.html" import siar_logo %}  {{ siar_logo('siar-lg') }} #}
+{%- macro siar_logo(cls='') -%}
+<svg class="siar {{ cls }}" viewBox="0 0 262 100" role="img" aria-label="SIAR" xmlns="http://www.w3.org/2000/svg">
+  <g fill="currentColor">
+    <!-- S -->
+    <rect x="0" y="0" width="62" height="24"/>
+    <rect x="0" y="0" width="24" height="62"/>
+    <rect x="0" y="38" width="62" height="24"/>
+    <rect x="38" y="38" width="24" height="62"/>
+    <rect x="0" y="76" width="62" height="24"/>
+    <!-- I -->
+    <rect x="78" y="0" width="24" height="100"/>
+    <!-- R -->
+    <rect x="200" y="0" width="24" height="100"/>
+    <rect x="200" y="0" width="62" height="24"/>
+    <rect x="238" y="0" width="24" height="52"/>
+    <rect x="200" y="28" width="62" height="24"/>
+    <polygon points="224,52 248,52 262,100 238,100"/>
+  </g>
+  <!-- A (orange triangle) -->
+  <polygon points="118,100 152,6 186,100" fill="#f1731e"/>
+</svg>
+{%- endmacro -%}

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% from "_brand.html" import siar_logo %}
+{% block title %}Admin sign in — Product Launch{% endblock %}
+{% block body %}
+<div class="auth-wrap">
+  <div class="card auth-card">
+    <div class="card-body stack">
+      <div style="text-align:center">
+        <div style="display:flex;justify-content:center;margin-bottom:6px">{{ siar_logo('siar-lg') }}</div>
+        <h2 style="margin-top:4px">Internal sign in</h2>
+        <p class="small muted" style="margin-top:4px">Product Launch — admin area</p>
+      </div>
+      {% if error %}
+      <div class="badge badge-danger" style="justify-content:center;width:100%;padding:9px">{{ error }}</div>
+      {% endif %}
+      <form method="post" class="stack">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="form-group">
+          <label class="field-label" for="username">Username</label>
+          <input type="text" id="username" name="username" autocomplete="username" required autofocus>
+        </div>
+        <div class="form-group">
+          <label class="field-label" for="password">Password</label>
+          <input type="password" id="password" name="password" autocomplete="current-password" required>
+        </div>
+        <button class="btn btn-primary btn-block btn-lg" type="submit">Sign in {{ icon('arrow-right') }}</button>
+      </form>
+    </div>
+  </div>
+</div>
+<div class="app-footer">Product Launch by {{ siar_logo('siar-sm siar-ink') }}<strong>Digital</strong></div>
+{% endblock %}

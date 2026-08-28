@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Status Tracking - SIAR Platform</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .header h1 {
+            color: #FF8C00;
+            font-size: 32px;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .tab-btn {
+            padding: 12px 20px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 600;
+            color: #999;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn.active {
+            color: #FF8C00;
+            border-bottom-color: #FF8C00;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .status-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            border-left: 5px solid #FF8C00;
+        }
+
+        .status-card h3 {
+            color: #333;
+            font-size: 14px;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .status-card .count {
+            font-size: 32px;
+            color: #FF8C00;
+            font-weight: bold;
+        }
+
+        .status-card .percentage {
+            font-size: 12px;
+            color: #999;
+            margin-top: 5px;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .metric-box {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .metric-box h4 {
+            color: #333;
+            font-size: 14px;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+        }
+
+        .metric-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .metric-item:last-child {
+            border-bottom: none;
+        }
+
+        .metric-item label {
+            color: #666;
+            font-size: 13px;
+        }
+
+        .metric-item value {
+            color: #FF8C00;
+            font-weight: bold;
+        }
+
+        .orders-table {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: #f5f5f5;
+            border-bottom: 2px solid #ddd;
+        }
+
+        th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+            font-size: 13px;
+        }
+
+        tbody tr:hover {
+            background: #f9f9f9;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-new { background: #e3f2fd; color: #1976d2; }
+        .status-confirmed { background: #f3e5f5; color: #7b1fa2; }
+        .status-payment-verified { background: #e8f5e9; color: #388e3c; }
+        .status-reserved { background: #fff3e0; color: #f57c00; }
+        .status-picking { background: #fce4ec; color: #c2185b; }
+        .status-picked { background: #f1f8e9; color: #558b2f; }
+        .status-packing { background: #e0f2f1; color: #00695c; }
+        .status-packed { background: #ede7f6; color: #512da8; }
+        .status-ready { background: #fff9c4; color: #f9a825; }
+        .status-dispatched { background: #e1f5fe; color: #01579b; }
+        .status-delivered { background: #c8e6c9; color: #2e7d32; }
+        .status-cancelled { background: #ffebee; color: #c62828; }
+        .status-returned { background: #f3e5f5; color: #6a1b9a; }
+
+        .chart-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .chart-container h3 {
+            color: #333;
+            font-size: 15px;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+        }
+
+        .timeline {
+            position: relative;
+            padding: 20px 0;
+        }
+
+        .timeline-item {
+            display: flex;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .timeline-dot {
+            width: 12px;
+            height: 12px;
+            background: #FF8C00;
+            border-radius: 50%;
+            position: absolute;
+            left: 0;
+            top: 5px;
+        }
+
+        .timeline-content {
+            margin-left: 30px;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 5px;
+            width: 100%;
+        }
+
+        .timeline-content .time {
+            color: #FF8C00;
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        .timeline-content .status-change {
+            color: #333;
+            font-size: 13px;
+            margin-top: 3px;
+        }
+
+        .filters {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        input, select {
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 13px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: #FF8C00;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            transition: background 0.3s ease;
+        }
+
+        button:hover {
+            background: #e67e00;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .summary-boxes {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .summary-box {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .summary-box .label {
+            color: #666;
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .summary-box .value {
+            color: #FF8C00;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .summary-box .unit {
+            color: #999;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Order Status Tracking Dashboard</h1>
+            <p>Complete order lifecycle metrics and status-wise analytics</p>
+
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('overview')">Overview</button>
+                <button class="tab-btn" onclick="switchTab('status-breakdown')">Status Breakdown</button>
+                <button class="tab-btn" onclick="switchTab('metrics')">Cycle Metrics</button>
+                <button class="tab-btn" onclick="switchTab('marketplace')">Marketplace</button>
+                <button class="tab-btn" onclick="switchTab('trends')">Daily Trends</button>
+                <button class="tab-btn" onclick="switchTab('lifecycle')">Order Lifecycle</button>
+            </div>
+        </div>
+
+        <!-- OVERVIEW TAB -->
+        <div id="overview" class="tab-content active">
+            <div class="summary-boxes">
+                <div class="summary-box">
+                    <div class="label">Total Orders</div>
+                    <div class="value" id="total-orders">-</div>
+                </div>
+                <div class="summary-box">
+                    <div class="label">Fulfillment Rate</div>
+                    <div class="value" id="fulfillment-rate">-</div>
+                    <div class="unit">%</div>
+                </div>
+                <div class="summary-box">
+                    <div class="label">Cancellation Rate</div>
+                    <div class="value" id="cancellation-rate">-</div>
+                    <div class="unit">%</div>
+                </div>
+                <div class="summary-box">
+                    <div class="label">Return Rate</div>
+                    <div class="value" id="return-rate">-</div>
+                    <div class="unit">%</div>
+                </div>
+            </div>
+
+            <div class="status-grid" id="status-grid-overview"></div>
+        </div>
+
+        <!-- STATUS BREAKDOWN TAB -->
+        <div id="status-breakdown" class="tab-content">
+            <div class="filters">
+                <select id="status-filter" onchange="loadOrdersByStatus()">
+                    <option value="">-- Select Status --</option>
+                    <option value="NEW">New</option>
+                    <option value="CONFIRMED">Confirmed</option>
+                    <option value="PAYMENT_VERIFIED">Payment Verified</option>
+                    <option value="INVENTORY_RESERVED">Inventory Reserved</option>
+                    <option value="PICKING">Picking</option>
+                    <option value="PICKED">Picked</option>
+                    <option value="PACKING">Packing</option>
+                    <option value="PACKED">Packed</option>
+                    <option value="READY_FOR_DISPATCH">Ready for Dispatch</option>
+                    <option value="DISPATCHED">Dispatched</option>
+                    <option value="DELIVERED">Delivered</option>
+                    <option value="CANCELLED">Cancelled</option>
+                    <option value="RETURNED">Returned</option>
+                </select>
+                <button onclick="loadOrdersByStatus()">Load Orders</button>
+            </div>
+
+            <div class="orders-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Order #</th>
+                            <th>Customer</th>
+                            <th>Marketplace</th>
+                            <th>Total</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                        </tr>
+                    </thead>
+                    <tbody id="orders-tbody">
+                        <tr>
+                            <td colspan="6" class="loading">Select a status to view orders</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- CYCLE METRICS TAB -->
+        <div id="metrics" class="tab-content">
+            <div class="filters">
+                <select id="days-filter" onchange="loadCycleMetrics()">
+                    <option value="7">Last 7 days</option>
+                    <option value="30" selected>Last 30 days</option>
+                    <option value="90">Last 90 days</option>
+                </select>
+            </div>
+
+            <div class="metrics-grid" id="metrics-grid"></div>
+
+            <div class="chart-container">
+                <h3>Turnaround Times by Status</h3>
+                <div id="turnaround-times"></div>
+            </div>
+        </div>
+
+        <!-- MARKETPLACE TAB -->
+        <div id="marketplace" class="tab-content">
+            <div class="filters">
+                <select id="marketplace-days" onchange="loadMarketplaceStats()">
+                    <option value="7">Last 7 days</option>
+                    <option value="30" selected>Last 30 days</option>
+                    <option value="90">Last 90 days</option>
+                </select>
+            </div>
+
+            <div class="orders-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Marketplace</th>
+                            <th>Total Orders</th>
+                            <th>Total Revenue</th>
+                            <th>Delivered</th>
+                            <th>Cancelled</th>
+                            <th>Fulfillment Rate</th>
+                        </tr>
+                    </thead>
+                    <tbody id="marketplace-tbody">
+                        <tr>
+                            <td colspan="6" class="loading">Loading marketplace data...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- DAILY TRENDS TAB -->
+        <div id="trends" class="tab-content">
+            <div class="filters">
+                <select id="trends-days" onchange="loadDailyTrends()">
+                    <option value="7">Last 7 days</option>
+                    <option value="30" selected>Last 30 days</option>
+                </select>
+            </div>
+
+            <div class="orders-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Orders Created</th>
+                            <th>Orders Delivered</th>
+                            <th>Orders Cancelled</th>
+                        </tr>
+                    </thead>
+                    <tbody id="trends-tbody">
+                        <tr>
+                            <td colspan="4" class="loading">Loading trends...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ORDER LIFECYCLE TAB -->
+        <div id="lifecycle" class="tab-content">
+            <div class="filters">
+                <input type="number" id="lifecycle-order-id" placeholder="Enter Order ID">
+                <button onclick="loadOrderLifecycle()">View Lifecycle</button>
+            </div>
+
+            <div class="chart-container">
+                <h3>Order Timeline</h3>
+                <div class="timeline" id="lifecycle-timeline">
+                    <p class="loading">Enter an order ID and click View Lifecycle</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api/orders';
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+
+            if (tabName === 'overview') loadOverview();
+            else if (tabName === 'status-breakdown') loadStatusCounts();
+            else if (tabName === 'metrics') loadCycleMetrics();
+            else if (tabName === 'marketplace') loadMarketplaceStats();
+            else if (tabName === 'trends') loadDailyTrends();
+        }
+
+        function loadOverview() {
+            fetch(`${API_BASE}/reporting/full-dashboard?days=30`)
+                .then(r => r.json())
+                .then(data => {
+                    const metrics = data.cycle_metrics;
+                    document.getElementById('total-orders').textContent = metrics.total_orders;
+                    document.getElementById('fulfillment-rate').textContent = metrics.fulfillment_rate;
+                    document.getElementById('cancellation-rate').textContent = metrics.cancellation_rate;
+                    document.getElementById('return-rate').textContent = metrics.return_rate;
+
+                    const statusCounts = data.status_counts;
+                    const grid = document.getElementById('status-grid-overview');
+                    grid.innerHTML = '';
+
+                    Object.entries(statusCounts).forEach(([status, count]) => {
+                        const card = document.createElement('div');
+                        card.className = 'status-card';
+                        card.innerHTML = `
+                            <h3>${status.replace(/_/g, ' ')}</h3>
+                            <div class="count">${count}</div>
+                            <div class="percentage">${metrics.total_orders > 0 ? ((count / metrics.total_orders) * 100).toFixed(1) : 0}%</div>
+                        `;
+                        grid.appendChild(card);
+                    });
+                })
+                .catch(err => console.error('Error loading overview:', err));
+        }
+
+        function loadStatusCounts() {
+            fetch(`${API_BASE}/reporting/status-counts`)
+                .then(r => r.json())
+                .then(data => {
+                    const statusSelect = document.getElementById('status-filter');
+                    statusSelect.innerHTML = '<option value="">-- Select Status --</option>';
+
+                    Object.entries(data).forEach(([status, count]) => {
+                        const option = document.createElement('option');
+                        option.value = status;
+                        option.textContent = `${status.replace(/_/g, ' ')} (${count})`;
+                        statusSelect.appendChild(option);
+                    });
+                })
+                .catch(err => console.error('Error loading status counts:', err));
+        }
+
+        function loadOrdersByStatus() {
+            const status = document.getElementById('status-filter').value;
+            if (!status) {
+                document.getElementById('orders-tbody').innerHTML = '<tr><td colspan="6" class="loading">Select a status to view orders</td></tr>';
+                return;
+            }
+
+            fetch(`${API_BASE}/reporting/orders-by-status/${status}?limit=50`)
+                .then(r => r.json())
+                .then(orders => {
+                    const tbody = document.getElementById('orders-tbody');
+                    tbody.innerHTML = '';
+
+                    orders.forEach(order => {
+                        const row = tbody.insertRow();
+                        row.innerHTML = `
+                            <td>${order.order_number}</td>
+                            <td>${order.customer}</td>
+                            <td>${order.marketplace || 'Direct'}</td>
+                            <td>PKR ${order.total.toFixed(2)}</td>
+                            <td><span class="status-badge status-${status.toLowerCase()}">${status}</span></td>
+                            <td>${new Date(order.created_at).toLocaleDateString()}</td>
+                        `;
+                    });
+                })
+                .catch(err => console.error('Error loading orders:', err));
+        }
+
+        function loadCycleMetrics() {
+            const days = document.getElementById('days-filter').value;
+
+            fetch(`${API_BASE}/reporting/cycle-metrics?days=${days}`)
+                .then(r => r.json())
+                .then(metrics => {
+                    const grid = document.getElementById('metrics-grid');
+                    grid.innerHTML = `
+                        <div class="metric-box">
+                            <h4>Order Status Distribution</h4>
+                            <div class="metric-item">
+                                <label>Confirmed</label>
+                                <value>${metrics.statuses.confirmed}</value>
+                            </div>
+                            <div class="metric-item">
+                                <label>Picked</label>
+                                <value>${metrics.statuses.picked}</value>
+                            </div>
+                            <div class="metric-item">
+                                <label>Packed</label>
+                                <value>${metrics.statuses.packed}</value>
+                            </div>
+                            <div class="metric-item">
+                                <label>Dispatched</label>
+                                <value>${metrics.statuses.dispatched}</value>
+                            </div>
+                            <div class="metric-item">
+                                <label>Delivered</label>
+                                <value>${metrics.statuses.delivered}</value>
+                            </div>
+                        </div>
+                        <div class="metric-box">
+                            <h4>Performance Metrics</h4>
+                            <div class="metric-item">
+                                <label>Fulfillment Rate</label>
+                                <value>${metrics.fulfillment_rate}%</value>
+                            </div>
+                            <div class="metric-item">
+                                <label>Cancellation Rate</label>
+                                <value>${metrics.cancellation_rate}%</value>
+                            </div>
+                            <div class="metric-item">
+                                <label>Return Rate</label>
+                                <value>${metrics.return_rate}%</value>
+                            </div>
+                            <div class="metric-item">
+                                <label>Period</label>
+                                <value>${days} days</value>
+                            </div>
+                        </div>
+                    `;
+                })
+                .catch(err => console.error('Error loading metrics:', err));
+
+            fetch(`${API_BASE}/reporting/turnaround-times`)
+                .then(r => r.json())
+                .then(times => {
+                    const div = document.getElementById('turnaround-times');
+                    div.innerHTML = '';
+
+                    Object.entries(times).forEach(([status, data]) => {
+                        const item = document.createElement('div');
+                        item.className = 'metric-item';
+                        item.innerHTML = `
+                            <label>${status}</label>
+                            <value>${data.average_hours}h (min: ${data.min_hours}h, max: ${data.max_hours}h)</value>
+                        `;
+                        div.appendChild(item);
+                    });
+                })
+                .catch(err => console.error('Error loading turnaround times:', err));
+        }
+
+        function loadMarketplaceStats() {
+            const days = document.getElementById('marketplace-days').value;
+
+            fetch(`${API_BASE}/reporting/marketplace-breakdown?days=${days}`)
+                .then(r => r.json())
+                .then(stats => {
+                    const tbody = document.getElementById('marketplace-tbody');
+                    tbody.innerHTML = '';
+
+                    Object.entries(stats).forEach(([marketplace, data]) => {
+                        const row = tbody.insertRow();
+                        row.innerHTML = `
+                            <td>${marketplace}</td>
+                            <td>${data.total_orders}</td>
+                            <td>PKR ${data.total_revenue.toFixed(2)}</td>
+                            <td>${data.delivered}</td>
+                            <td>${data.cancelled}</td>
+                            <td>${data.fulfillment_rate}%</td>
+                        `;
+                    });
+                })
+                .catch(err => console.error('Error loading marketplace stats:', err));
+        }
+
+        function loadDailyTrends() {
+            const days = document.getElementById('trends-days').value;
+
+            fetch(`${API_BASE}/reporting/daily-trends?days=${days}`)
+                .then(r => r.json())
+                .then(trends => {
+                    const tbody = document.getElementById('trends-tbody');
+                    tbody.innerHTML = '';
+
+                    Object.entries(trends).forEach(([date, data]) => {
+                        const row = tbody.insertRow();
+                        row.innerHTML = `
+                            <td>${date}</td>
+                            <td>${data.orders_created}</td>
+                            <td>${data.orders_delivered}</td>
+                            <td>${data.orders_cancelled}</td>
+                        `;
+                    });
+                })
+                .catch(err => console.error('Error loading trends:', err));
+        }
+
+        function loadOrderLifecycle() {
+            const orderId = document.getElementById('lifecycle-order-id').value;
+            if (!orderId) {
+                alert('Please enter an Order ID');
+                return;
+            }
+
+            fetch(`${API_BASE}/reporting/order-lifecycle/${orderId}`)
+                .then(r => r.json())
+                .then(data => {
+                    const timeline = document.getElementById('lifecycle-timeline');
+                    timeline.innerHTML = '';
+
+                    if (!data.timeline || data.timeline.length === 0) {
+                        timeline.innerHTML = '<p class="loading">No timeline data available</p>';
+                        return;
+                    }
+
+                    data.timeline.forEach(event => {
+                        const item = document.createElement('div');
+                        item.className = 'timeline-item';
+                        item.innerHTML = `
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-content">
+                                <div class="time">${new Date(event.timestamp).toLocaleString()}</div>
+                                <div class="status-change">${event.from_status} → <strong>${event.to_status}</strong></div>
+                                <div class="status-change" style="font-size: 11px; margin-top: 3px;">Duration: ${event.hours_in_previous_status}h</div>
+                                ${event.reason ? `<div class="status-change" style="font-size: 11px;">${event.reason}</div>` : ''}
+                            </div>
+                        `;
+                        timeline.appendChild(item);
+                    });
+                })
+                .catch(err => {
+                    document.getElementById('lifecycle-timeline').innerHTML = `<div class="error">Error loading lifecycle: ${err.message}</div>`;
+                });
+        }
+
+        // Load overview on page load
+        window.addEventListener('load', loadOverview);
+    </script>
+</body>
+</html>

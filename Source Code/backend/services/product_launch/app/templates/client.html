@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% from "_brand.html" import siar_logo %}
+{% block title %}Product Launch — Your Submission{% endblock %}
+{% block body %}
+<header class="appbar">
+  <div class="brand">
+    {{ siar_logo('siar-bar') }}
+    <span class="brand-div"></span>
+    <div>
+      <h1>Product Launch</h1>
+      <small id="appbar-brand">Loading…</small>
+    </div>
+  </div>
+  <div class="bar-actions">
+    <span class="bar-meta">Ref&nbsp;<strong>{{ token }}</strong></span>
+    <span id="status-pill" class="status-pill status-Draft">Draft</span>
+    <span id="save-indicator" class="save-dot on-dark"><span class="label">All changes saved</span></span>
+  </div>
+</header>
+
+<div class="container stack">
+
+  <!-- Welcome -->
+  <div>
+    <div class="eyebrow">Welcome</div>
+    <h2 style="font-size:24px; margin-top:6px">Let's add your products</h2>
+    <p class="muted" style="margin:6px 0 0; max-width:640px">
+      Add each product below. Everything you type is saved automatically to this private link —
+      you can stop any time and pick up right where you left off.
+    </p>
+  </div>
+
+  <!-- Your details + progress -->
+  <div class="card">
+    <div class="card-head">
+      <h2>Your details</h2>
+      <div class="progress-wrap" style="min-width:260px">
+        <div class="progress"><span id="progress-bar"></span></div>
+        <span id="progress-text" class="small muted" style="white-space:nowrap">0 of 0 complete</span>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="field-label" for="brand-name">Brand / Company name</label>
+          <input type="text" id="brand-name" placeholder="Your brand name">
+        </div>
+        <div class="form-group">
+          <label class="field-label" for="contact-name">Contact person</label>
+          <input type="text" id="contact-name" placeholder="Full name">
+        </div>
+        <div class="form-group">
+          <label class="field-label" for="contact-email">Contact email</label>
+          <input type="email" id="contact-email" placeholder="name@brand.com">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Products -->
+  <div class="card">
+    <div class="card-head">
+      <h2>Products</h2>
+      <div class="bar-actions">
+        <button id="submit-btn" class="btn">{{ icon('check') }} Review &amp; Submit</button>
+        <button id="add-product-btn" class="btn btn-primary">{{ icon('plus') }} Add Product</button>
+      </div>
+    </div>
+    <div class="card-body" style="padding:0">
+      <div class="table-wrap">
+        <table class="data responsive" id="products-table" style="display:none">
+          <thead><tr></tr></thead>
+          <tbody id="products-tbody"></tbody>
+        </table>
+      </div>
+      <div id="products-empty" class="empty">
+        <div class="art">{{ icon('box') }}</div>
+        <h3>No products yet</h3>
+        <p class="small">Add your first product to get started. You can save and come back any time.</p>
+        <button id="add-product-empty-btn" class="btn btn-primary" style="margin-top:16px">{{ icon('plus') }} Add your first product</button>
+      </div>
+    </div>
+  </div>
+
+  <p class="small muted" style="text-align:center">
+    Your progress is saved automatically to this private link. Bookmark it to continue later.
+  </p>
+</div>
+
+<div class="app-footer">Product Launch by {{ siar_logo('siar-sm siar-ink') }}<strong>Digital</strong></div>
+
+<!-- Product add/edit modal -->
+<div class="modal-backdrop" id="product-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <h2 id="modal-title">Add Product</h2>
+      <button class="x-close" data-close-modal title="Close">{{ icon('close') }}</button>
+    </div>
+    <div class="modal-body">
+      <div id="product-form"></div>
+    </div>
+    <div class="modal-foot">
+      <button id="delete-product-btn" class="btn btn-danger" style="display:none">{{ icon('trash') }} Delete</button>
+      <div class="spacer"></div>
+      <button class="btn" data-close-modal>Cancel</button>
+      <button id="save-product-btn" class="btn btn-primary">{{ icon('save') }} Save Product</button>
+    </div>
+  </div>
+</div>
+
+<!-- Submit modal -->
+<div class="modal-backdrop" id="submit-modal">
+  <div class="modal narrow">
+    <div class="modal-head">
+      <h2>Review &amp; Submit</h2>
+      <button class="x-close" data-close-submit title="Close">{{ icon('close') }}</button>
+    </div>
+    <div class="modal-body"><div id="submit-summary"></div></div>
+    <div class="modal-foot">
+      <div class="spacer"></div>
+      <button class="btn" data-close-submit>Keep editing</button>
+      <button id="confirm-submit-btn" class="btn btn-primary">{{ icon('send') }} Submit to team</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>window.LAUNCH_TOKEN = {{ token|tojson }};</script>
+<script src="{{ url_for('static', filename='js/board.js') }}"></script>
+<script src="{{ url_for('static', filename='js/client.js') }}"></script>
+{% endblock %}

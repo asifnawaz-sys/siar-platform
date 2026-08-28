@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -c ' *)",
+      "Bash(open -a \"Google Chrome\" \"/Users/abdullahrizwan/Documents/Code/Products Frontend/Zainab Salman/product_editor.html\")"
+    ]
+  }
+}

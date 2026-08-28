@@ -1,0 +1,61 @@
+name: Build SIAR Digital Platform
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pyinstaller pywebview
+      - name: Build Windows executable
+        run: |
+          pyinstaller siar_windows.spec --distpath=dist_windows
+      - name: Upload Windows build
+        uses: actions/upload-artifact@v3
+        with:
+          name: SIAR-Windows
+          path: dist_windows/
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pyinstaller pywebview
+      - name: Build macOS application
+        run: |
+          pyinstaller siar_macos.spec --distpath=dist_macos
+      - name: Upload macOS build
+        uses: actions/upload-artifact@v3
+        with:
+          name: SIAR-macOS
+          path: dist_macos/
+
+  create-release:
+    needs: [build-windows, build-macos]
+    runs-on: ubuntu-latest
+    if: success()
+    steps:
+      - uses: actions/download-artifact@v3
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            SIAR-Windows/**
+            SIAR-macOS/**

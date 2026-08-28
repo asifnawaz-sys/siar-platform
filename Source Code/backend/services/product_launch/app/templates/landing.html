@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% from "_brand.html" import siar_logo %}
+{% block title %}Product Launch — Information Collection{% endblock %}
+{% block body %}
+<div class="hero">
+  <div style="display:flex;justify-content:center;margin-bottom:22px">{{ siar_logo('siar-lg') }}</div>
+  <div class="eyebrow">Product Launch</div>
+  <h1>Share your products, beautifully.</h1>
+  <p class="lead">A simple, private space for brands to submit the products they want to launch —
+    no account, no software, no fuss.</p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="n">1</div>
+      <h4>Open your link</h4>
+      <p class="small muted">We send you a private link. Just click it — nothing to install.</p>
+    </div>
+    <div class="step">
+      <div class="n">2</div>
+      <h4>Add your products</h4>
+      <p class="small muted">Fill in each product at your own pace. It saves automatically.</p>
+    </div>
+    <div class="step">
+      <div class="n">3</div>
+      <h4>Send it back</h4>
+      <p class="small muted">Share the same link with us and we'll take it from there.</p>
+    </div>
+  </div>
+
+  <p class="small muted" style="margin-top:30px">
+    Have a link already? Open it to continue. &nbsp;·&nbsp;
+    <a href="{{ url_for('admin.dashboard') }}">Internal team {{ icon('arrow-right') }}</a>
+  </p>
+</div>
+
+<div class="app-footer">Product Launch by {{ siar_logo('siar-sm siar-ink') }}<strong>Digital</strong></div>
+{% endblock %}

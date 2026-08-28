@@ -1,0 +1,969 @@
+openapi: 3.0.0
+info:
+  title: SIAR Platform ERP/OMS/WMS API
+  description: Enterprise-grade Order Management, Inventory Control, and Fulfillment API
+  version: 1.0.0
+  contact:
+    name: SIAR Digital Support
+    email: support@siardigital.com
+  license:
+    name: Proprietary
+    url: https://www.siardigital.com
+
+servers:
+  - url: http://localhost:5000/api
+    description: Development Server
+  - url: https://erp.siardigital.com/api
+    description: Production Server
+
+tags:
+  - name: User Management
+    description: User accounts, roles, permissions, and authentication (8 endpoints)
+  - name: Analytics
+    description: Business intelligence, reporting, and forecasting (8 endpoints)
+  - name: Orders
+    description: Order creation, tracking, and lifecycle management (15+ endpoints)
+  - name: Inventory
+    description: Stock management, SKU tracking, and warehouse operations (12+ endpoints)
+  - name: Fulfillment
+    description: Picking, packing, shipping, and delivery operations (20+ endpoints)
+  - name: Marketplace Integration
+    description: Shopify, Amazon, TikTok, Walmart, eBay, Etsy connectors (6 integrations)
+  - name: Returns & Refunds
+    description: Return order processing and refund management (8 endpoints)
+
+# =====================================================================
+# USER MANAGEMENT ENDPOINTS (8)
+# =====================================================================
+
+paths:
+  /users:
+    post:
+      tags:
+        - User Management
+      summary: Create new user
+      description: Create a new user account with roles and permissions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  example: john.doe
+                email:
+                  type: string
+                  format: email
+                  example: john@company.com
+                password:
+                  type: string
+                  example: SecurePass123!
+                full_name:
+                  type: string
+                  example: John Doe
+                roles:
+                  type: array
+                  items:
+                    type: string
+                  example: ["Sales Representative", "Order Fulfiller"]
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  user_id:
+                    type: integer
+                  username:
+                    type: string
+                  email:
+                    type: string
+                  created_at:
+                    type: string
+                    format: date-time
+        '400':
+          description: Invalid input or user already exists
+
+  /users/{userId}:
+    get:
+      tags:
+        - User Management
+      summary: Get user details
+      description: Retrieve complete user profile including roles and permissions
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: User found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  username:
+                    type: string
+                  email:
+                    type: string
+                  full_name:
+                    type: string
+                  is_active:
+                    type: boolean
+                  roles:
+                    type: array
+                    items:
+                      type: string
+                  created_at:
+                    type: string
+                    format: date-time
+        '404':
+          description: User not found
+
+  /users/{userId}/password:
+    post:
+      tags:
+        - User Management
+      summary: Change user password
+      description: Update password for authenticated user
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                old_password:
+                  type: string
+                new_password:
+                  type: string
+      responses:
+        '200':
+          description: Password changed successfully
+        '400':
+          description: Invalid old password
+
+  /users/{userId}/lock:
+    post:
+      tags:
+        - User Management
+      summary: Lock/unlock user account
+      description: Activate or deactivate user account access
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                action:
+                  type: string
+                  enum: [lock, unlock]
+      responses:
+        '200':
+          description: Account status updated
+        '404':
+          description: User not found
+
+  /users/authenticate:
+    post:
+      tags:
+        - User Management
+      summary: User login
+      description: Authenticate user and receive JWT token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  token:
+                    type: string
+                  user:
+                    type: object
+        '401':
+          description: Invalid credentials
+
+  /users/roles:
+    post:
+      tags:
+        - User Management
+      summary: Create new role
+      description: Create a new role with specific permissions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                permissions:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '201':
+          description: Role created successfully
+
+  /users/{userId}/roles:
+    post:
+      tags:
+        - User Management
+      summary: Assign role to user
+      description: Add a role to user's profile
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                role_name:
+                  type: string
+      responses:
+        '200':
+          description: Role assigned
+
+  /users/audit-logs:
+    get:
+      tags:
+        - User Management
+      summary: Get audit trail
+      description: Retrieve system audit logs with filtering options
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: user_id
+          in: query
+          schema:
+            type: integer
+        - name: action
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Audit logs retrieved
+
+# =====================================================================
+# ANALYTICS ENDPOINTS (8)
+# =====================================================================
+
+  /analytics/orders/trends:
+    get:
+      tags:
+        - Analytics
+      summary: Order trends analysis
+      description: Get daily order counts, revenue, and status breakdown
+      parameters:
+        - name: days
+          in: query
+          schema:
+            type: integer
+            default: 30
+        - name: warehouse_id
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Trends data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  period_days:
+                    type: integer
+                  daily_trends:
+                    type: array
+                    items:
+                      type: object
+
+  /analytics/inventory/turnover:
+    get:
+      tags:
+        - Analytics
+      summary: Inventory turnover metrics
+      description: SKU turnover rates, movement velocity, and stock levels
+      parameters:
+        - name: days
+          in: query
+          schema:
+            type: integer
+            default: 90
+      responses:
+        '200':
+          description: Inventory turnover data
+
+  /analytics/customer/lifetime-value:
+    get:
+      tags:
+        - Analytics
+      summary: Customer lifetime value analysis
+      description: Customer spending patterns and segmentation
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+        - name: min_orders
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: CLV ranking
+
+  /analytics/fulfillment/metrics:
+    get:
+      tags:
+        - Analytics
+      summary: Fulfillment performance metrics
+      description: On-time delivery rates and processing times
+      parameters:
+        - name: days
+          in: query
+          schema:
+            type: integer
+            default: 30
+      responses:
+        '200':
+          description: Fulfillment metrics
+
+  /analytics/financial/summary:
+    get:
+      tags:
+        - Analytics
+      summary: Financial summary
+      description: Revenue, COGS, profit, and margins by period
+      parameters:
+        - name: start_date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Financial metrics
+
+  /analytics/predictions/demand:
+    get:
+      tags:
+        - Analytics
+      summary: Demand forecasting
+      description: Predicted demand by SKU for next N days
+      parameters:
+        - name: days
+          in: query
+          schema:
+            type: integer
+            default: 30
+        - name: sku_id
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Demand predictions
+
+  /analytics/reports/custom:
+    post:
+      tags:
+        - Analytics
+      summary: Generate custom analytics report
+      description: Build custom reports with filters and metrics
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                report_type:
+                  type: string
+                filters:
+                  type: object
+                metrics:
+                  type: array
+      responses:
+        '200':
+          description: Report generated
+
+  /analytics/export/{reportType}:
+    get:
+      tags:
+        - Analytics
+      summary: Export analytics report
+      description: Export reports in CSV, JSON, or Excel format
+      parameters:
+        - name: reportType
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [csv, json, excel]
+            default: csv
+      responses:
+        '200':
+          description: Report exported
+
+# =====================================================================
+# ORDER MANAGEMENT ENDPOINTS (Core - 15+)
+# =====================================================================
+
+  /orders:
+    post:
+      tags:
+        - Orders
+      summary: Create new order
+      description: Create an order from any marketplace
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                customer_id:
+                  type: integer
+                marketplace:
+                  type: string
+                  enum: [Shopify, Amazon, TikTok, Walmart, eBay, Etsy]
+                marketplace_order_id:
+                  type: string
+                items:
+                  type: array
+                  items:
+                    type: object
+                total_amount:
+                  type: number
+      responses:
+        '201':
+          description: Order created
+        '400':
+          description: Invalid order data
+
+    get:
+      tags:
+        - Orders
+      summary: List orders
+      description: Get orders with filtering and pagination
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: marketplace
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Orders list
+
+  /orders/{orderId}:
+    get:
+      tags:
+        - Orders
+      summary: Get order details
+      description: Retrieve complete order information
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Order details
+        '404':
+          description: Order not found
+
+  /orders/{orderId}/status:
+    post:
+      tags:
+        - Orders
+      summary: Update order status
+      description: Change order status with audit trail
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                new_status:
+                  type: string
+                notes:
+                  type: string
+      responses:
+        '200':
+          description: Status updated
+
+# =====================================================================
+# INVENTORY MANAGEMENT ENDPOINTS (Core - 12+)
+# =====================================================================
+
+  /orders/warehouses:
+    get:
+      tags:
+        - Inventory
+      summary: List warehouses
+      responses:
+        '200':
+          description: Warehouses list
+
+    post:
+      tags:
+        - Inventory
+      summary: Create warehouse
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                warehouse_name:
+                  type: string
+                location:
+                  type: string
+                capacity:
+                  type: integer
+      responses:
+        '201':
+          description: Warehouse created
+
+  /orders/skus:
+    get:
+      tags:
+        - Inventory
+      summary: List SKUs
+      responses:
+        '200':
+          description: SKUs list
+
+    post:
+      tags:
+        - Inventory
+      summary: Create SKU
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                sku_name:
+                  type: string
+                sku_code:
+                  type: string
+                description:
+                  type: string
+                category:
+                  type: string
+      responses:
+        '201':
+          description: SKU created
+
+  /orders/inventory/{skuId}:
+    get:
+      tags:
+        - Inventory
+      summary: Get SKU inventory
+      parameters:
+        - name: skuId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Inventory details
+
+  /orders/inventory/add:
+    post:
+      tags:
+        - Inventory
+      summary: Add stock
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                sku_id:
+                  type: integer
+                warehouse_id:
+                  type: integer
+                quantity:
+                  type: integer
+                reference_id:
+                  type: string
+      responses:
+        '200':
+          description: Stock added
+
+# =====================================================================
+# FULFILLMENT ENDPOINTS (20+)
+# =====================================================================
+
+  /fulfillment/picking-lists:
+    post:
+      tags:
+        - Fulfillment
+      summary: Create picking list
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                warehouse_id:
+                  type: integer
+                order_ids:
+                  type: array
+                  items:
+                    type: integer
+      responses:
+        '201':
+          description: Picking list created
+
+  /fulfillment/packing-lists:
+    post:
+      tags:
+        - Fulfillment
+      summary: Create packing list
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                picking_list_id:
+                  type: integer
+                items:
+                  type: array
+      responses:
+        '201':
+          description: Packing list created
+
+  /fulfillment/shipments:
+    post:
+      tags:
+        - Fulfillment
+      summary: Create shipment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                packing_list_id:
+                  type: integer
+                carrier:
+                  type: string
+                tracking_number:
+                  type: string
+                estimated_delivery:
+                  type: string
+                  format: date
+      responses:
+        '201':
+          description: Shipment created
+
+# =====================================================================
+# RETURNS & REFUNDS ENDPOINTS (8)
+# =====================================================================
+
+  /returns:
+    post:
+      tags:
+        - Returns & Refunds
+      summary: Create return order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                order_id:
+                  type: integer
+                items:
+                  type: array
+                return_reason:
+                  type: string
+      responses:
+        '201':
+          description: Return created
+
+  /returns/{returnId}/refund:
+    post:
+      tags:
+        - Returns & Refunds
+      summary: Process refund
+      parameters:
+        - name: returnId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                amount:
+                  type: number
+                refund_method:
+                  type: string
+      responses:
+        '200':
+          description: Refund processed
+
+# =====================================================================
+# MARKETPLACE INTEGRATION ENDPOINTS
+# =====================================================================
+
+  /integrations/shopify/webhook:
+    post:
+      tags:
+        - Marketplace Integration
+      summary: Shopify webhook receiver
+      description: Receive order updates from Shopify
+      security:
+        - HmacSignature: []
+      responses:
+        '200':
+          description: Webhook processed
+
+  /integrations/sync:
+    post:
+      tags:
+        - Marketplace Integration
+      summary: Sync marketplace orders
+      description: Manually trigger marketplace order sync
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                marketplace:
+                  type: string
+                  enum: [shopify, amazon, tiktok, walmart, ebay, etsy]
+      responses:
+        '200':
+          description: Sync initiated
+
+# =====================================================================
+# SECURITY & AUTHENTICATION
+# =====================================================================
+
+securitySchemes:
+  BearerToken:
+    type: http
+    scheme: bearer
+    bearerFormat: JWT
+    description: JWT token from /users/authenticate endpoint
+
+  HmacSignature:
+    type: apiKey
+    in: header
+    name: X-Shopify-Hmac-SHA256
+    description: HMAC-SHA256 signature for webhook validation
+
+security:
+  - BearerToken: []
+
+# =====================================================================
+# COMPONENTS & SCHEMAS
+# =====================================================================
+
+components:
+  schemas:
+    Order:
+      type: object
+      properties:
+        id:
+          type: integer
+        customer_id:
+          type: integer
+        marketplace:
+          type: string
+        marketplace_order_id:
+          type: string
+        status:
+          type: string
+          enum:
+            - NEW
+            - PROCESSING
+            - PAYMENT_CONFIRMED
+            - PICKING
+            - PACKED
+            - READY_TO_SHIP
+            - SHIPPED
+            - DELIVERED
+            - CANCELLED
+            - RETURNED
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+        total_amount:
+          type: number
+        created_at:
+          type: string
+          format: date-time
+
+    OrderItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        sku_id:
+          type: integer
+        quantity:
+          type: integer
+        price:
+          type: number
+
+    Inventory:
+      type: object
+      properties:
+        sku_id:
+          type: integer
+        warehouse_id:
+          type: integer
+        physical:
+          type: integer
+        reserved:
+          type: integer
+        damaged:
+          type: integer
+        available_to_sell:
+          type: integer
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        email:
+          type: string
+        full_name:
+          type: string
+        roles:
+          type: array
+          items:
+            type: string
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid authentication token
+    NotFound:
+      description: Resource not found
+    ValidationError:
+      description: Invalid input parameters
+    ServerError:
+      description: Internal server error

@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% from "_brand.html" import siar_logo %}
+{% block title %}Admin — All launches{% endblock %}
+{% block body_attrs %} data-admin-page="dashboard"{% endblock %}
+{% block body %}
+<header class="appbar">
+  <div class="brand">
+    {{ siar_logo('siar-bar') }}
+    <span class="brand-div"></span>
+    <div><h1>Product Launch</h1><small>Admin dashboard</small></div>
+  </div>
+  <div class="bar-actions">
+    <button id="new-launch-btn" class="btn btn-primary">{{ icon('plus') }} New launch</button>
+    <a class="btn btn-ghost on-dark" href="{{ url_for('admin.logout') }}">{{ icon('logout') }} Sign out</a>
+  </div>
+</header>
+
+<div class="container stack">
+  <div class="card">
+    <div class="card-head"><h2>Launch requests</h2><span class="small muted">{{ rows|length }} total</span></div>
+    <div style="padding:0">
+      {% if rows %}
+      <div class="table-wrap">
+        <table class="data">
+          <thead><tr>
+            <th>Brand</th><th>Ref ID</th><th>Status</th><th>Products</th>
+            <th class="hide-sm">Created</th><th class="hide-sm">Updated</th><th class="actions">Actions</th>
+          </tr></thead>
+          <tbody>
+          {% for r in rows %}
+            {% set ln = r.launch %}
+            {% set client_url = url_for('client.launch', token=ln.token, _external=True) %}
+            <tr>
+              <td class="cell-title">{{ ln.brand_name or "Untitled brand" }}
+                {% if ln.contact_name %}<div class="cell-sub">{{ ln.contact_name }}</div>{% endif %}
+              </td>
+              <td><code>{{ ln.token }}</code></td>
+              <td>
+                <span class="status-pill status-{{ ln.status|replace(' ','-') }}" data-status-pill="{{ ln.token }}">{{ ln.status }}</span>
+                <select class="small" data-status-token="{{ ln.token }}" style="margin-top:8px;display:block;max-width:160px">
+                  {% for s in statuses %}<option value="{{ s }}" {% if s==ln.status %}selected{% endif %}>{{ s }}</option>{% endfor %}
+                </select>
+              </td>
+              <td>
+                {% if r.total %}
+                  <span class="badge {{ 'badge-ok' if r.complete==r.total else 'badge-warn' }} badge-dot">{{ r.complete }} / {{ r.total }} complete</span>
+                {% else %}<span class="muted small">None</span>{% endif %}
+              </td>
+              <td class="hide-sm small muted">{{ ln.created_at.strftime('%d %b %Y') }}</td>
+              <td class="hide-sm small muted">{{ ln.updated_at.strftime('%d %b %Y, %H:%M') }}</td>
+              <td class="actions">
+                <div class="row" style="justify-content:flex-end;gap:6px">
+                  <a class="btn btn-sm btn-dark" href="{{ url_for('admin.review', token=ln.token) }}">Review</a>
+                  <button class="btn btn-sm" data-copy="{{ client_url }}">{{ icon('link') }} Copy link</button>
+                  <a class="btn btn-sm btn-primary" href="{{ url_for('admin.export_shopify_csv', token=ln.token) }}">{{ icon('download') }} Shopify</a>
+                  <a class="btn btn-sm" href="{{ url_for('admin.export_csv', token=ln.token) }}">Review CSV</a>
+                  <button class="btn btn-sm btn-danger" data-delete-token="{{ ln.token }}" data-brand="{{ ln.brand_name or 'Untitled brand' }}">{{ icon('trash') }}</button>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty">
+        <div class="art">{{ icon('rocket') }}</div>
+        <h3>No launches yet</h3>
+        <p class="small">Create a launch, then share its client link with the brand.</p>
+        <button class="btn btn-primary" style="margin-top:16px" onclick="document.getElementById('new-launch-btn').click()">{{ icon('plus') }} New launch</button>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="app-footer">Product Launch by {{ siar_logo('siar-sm siar-ink') }}<strong>Digital</strong></div>
+
+<!-- New launch modal -->
+<div class="modal-backdrop" id="new-launch-modal">
+  <div class="modal narrow">
+    <div class="modal-head"><h2>New launch</h2><button class="x-close" data-close-nl>{{ icon('close') }}</button></div>
+    <div class="modal-body">
+      <div id="new-launch-form" class="stack">
+        <div class="form-group">
+          <label class="field-label" for="nl-brand">Brand / Company name <span class="req">*</span></label>
+          <input type="text" id="nl-brand" placeholder="e.g. Studio SY">
+        </div>
+        <div class="form-group">
+          <label class="field-label" for="nl-contact">Contact person</label>
+          <input type="text" id="nl-contact" placeholder="Full name (optional)">
+        </div>
+        <div class="form-group">
+          <label class="field-label" for="nl-email">Contact email</label>
+          <input type="email" id="nl-email" placeholder="name@brand.com (optional)">
+        </div>
+      </div>
+      <div id="new-launch-result" class="stack" style="display:none">
+        <p class="badge badge-ok badge-dot" style="padding:8px 12px">Launch created</p>
+        <p class="small muted">Share this private link with the brand:</p>
+        <div class="copybox">
+          <input type="text" id="nl-client-url" readonly>
+          <button class="btn" id="nl-copy-btn">{{ icon('copy') }} Copy</button>
+        </div>
+        <a class="btn btn-primary btn-block" id="nl-open-review" href="#">Open review page {{ icon('arrow-right') }}</a>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <div class="spacer"></div>
+      <button class="btn" data-close-nl>Close</button>
+      <button class="btn btn-primary" id="create-launch-btn">Create launch</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+{% endblock %}
